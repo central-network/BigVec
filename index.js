@@ -88,7 +88,7 @@ Object.defineProperties(BigVec, {
     
     fromString: {
         value: function () {
-            let [string = ""] = arguments;
+            let [string = "0"] = arguments;
 
             if (string.startsWith("0x")) {
                 return this.fromBigInt(BigInt(string));
@@ -175,7 +175,7 @@ Object.defineProperties(BigVec, {
     fromArray: {
         value: function () {
             const [array = []] = arguments;
-            return this.fromString(`0x${array.map(v => v.toString(16)).join("")}`)
+            return this.fromString(`0x${array.map(v => v.toString(16).padStart(2,0)).join("")}`)
         }
     }
 });
