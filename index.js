@@ -151,8 +151,8 @@ Object.defineProperties(BigVec, {
 
     fromDataView: {
         value: function () {
-            const [dataView, offset = dataView.byteOffset] = arguments;
-            return this.fromBuffer(dataView.buffer, offset);
+            const [dataView, offset = 0] = arguments;
+            return this.fromBuffer(dataView.buffer, offset + dataView.byteOffset);
         }
     },
 
@@ -255,6 +255,7 @@ Object.defineProperties(BigVec.prototype, {
                 color       : { r : v0, g : v1, b : v2, a : v3, __proto__ : null },
                 view        : {
                     __proto__ : null,
+                    v128 : BigVec128Array.of(this),
                     f64x2 : this.toArrayView(Float64Array),
                     f32x4 : this.toArrayView(Float32Array),
                     u64x2 : this.toArrayView(BigUint64Array),
@@ -648,3 +649,22 @@ Object.defineProperties(BigVec128Array.prototype, {
 Reflect.defineProperty(self, "BigVec", { value: BigVec, enumerable: true, configurable: true, writable: true });
 
 Reflect.defineProperty(self, "BigVec128Array", { value: BigVec128Array, enumerable: true, configurable: true, writable: true });
+
+Reflect.defineProperty(DataView.prototype, "getBigVec128", {
+    value : function () {
+        const [offset = 0] = arguments;
+        return BigVec.fromDataView(this, offset);
+    }
+});
+
+Reflect.defineProperty(DataView.prototype, "setBigVec128", {
+    value : function () {
+        const [offset = 0, value] = arguments;
+
+        new Uint8Array(
+            this.buffer, 
+            this.byteOffset + offset, 
+            BYTES_PER_ELEMENT
+        ).set( BigVec(value).toArrayView() );
+    }
+});
