@@ -13,6 +13,8 @@ In the vast universe of JavaScript, we have numbers, strings, and even `BigInt`.
 
 `BigVec` is not just a library; it's a paradigm shift. It's a novel data type that brings the power of 128-bit vectors to your fingertips, wrapped in a beautiful, intuitive API. It's the bridge between the high-level world of JavaScript objects and the raw, untamed power of binary data.
 
+![Console Preview](ssconsole.png) <!-- You can replace this with an actual image -->
+
 ## 🎨 The Vision: The Art of Intelligence 🎨
 
 `BigVec` is a testament to the "Art of Intelligence." It's a creation born from a deep understanding of JavaScript's soul, a desire to push the boundaries of what's possible. It's a symphony of `BigInt`'s flexibility and `ArrayBuffer`'s raw power.
@@ -62,7 +64,7 @@ const myVec = BigVec.random();
 console.log(myVec);
 ```
 
-![Debugger Preview](ssconsole.png) <!-- You can replace this with an actual image -->
+![Debugger Preview](ssdebugger.png) <!-- You can replace this with an actual image -->
 
 ### `BigVec128Array` in Action
 
