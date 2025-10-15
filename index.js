@@ -96,7 +96,7 @@ Object.defineProperties(BigVec, {
             
             string = string.replaceAll("-", "").match(/[0-9a-f]{2}/gi).map(v => v.padStart(2,0)).join("")
 
-            return this.fromBigInt(BigInt(`0x${string}`));
+            return this.fromBigInt(BigInt(`0x${string.padStart(32, 0)}`));
         }
     },
     
