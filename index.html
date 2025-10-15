@@ -1,0 +1,31 @@
+<meta charset="utf8" />
+<script type="module">
+    import {BigVec, BigVec128Array} from "./index.js"
+
+    const output = (name, value) => {
+        const element = document.createElement("pre");
+        element.innerHTML = `<b>${name}</b>: ${JSON.stringify(value, null, 4)}`;
+        document.body.appendChild(element);
+    }
+
+    output("BigVec.fromUUID('f81d4fae-7dec-11d0-a765-00a0c91e6bf6')", BigVec.fromUUID('f81d4fae-7dec-11d0-a765-00a0c91e6bf6'));
+    output("BigVec.fromBigInt(123456789n)", BigVec.fromBigInt(123456789n));
+    
+    const randomVec = BigVec.random();
+    output("BigVec.random()", randomVec);
+    output("randomVec.toUUID()", randomVec.toUUID());
+    output("randomVec.toHEX()", randomVec.toHEX());
+    output("randomVec.toString()", randomVec.toString());
+    output("randomVec.toArray()", randomVec.toArray());
+    output("randomVec.toBuffer()", randomVec.toBuffer());
+    
+    const arr = new BigVec128Array(5);
+    arr.set([BigVec.random(), BigVec.random(), BigVec.random(), BigVec.random(), BigVec.random()]);
+    output("new BigVec128Array(5)", arr);
+    output("arr.toUUIDArray()", arr.toUUIDArray());
+    output("arr.toHEXArray()", arr.toHEXArray());
+    output("arr.toStringArray()", arr.toStringArray());
+    output("arr.toArray()", arr.toArray());
+    output("arr.toBufferArray()", arr.toBufferArray());
+
+</script>
