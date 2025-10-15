@@ -91,12 +91,10 @@ Object.defineProperties(BigVec, {
             let [string = ""] = arguments;
 
             if (string.startsWith("0x")) {
-                string = string.substring(2)
+                return this.fromBigInt(BigInt(string));
             }
-            
-            string = string.replaceAll("-", "").match(/[0-9a-f]{2}/gi).map(v => v.padStart(2,0)).join("")
 
-            return this.fromBigInt(BigInt(`0x${string.padStart(32, 0)}`));
+            return this.fromString(`0x${string.replaceAll("-", "")}`);
         }
     },
     
@@ -198,7 +196,7 @@ Object.defineProperties(BigVec.prototype, {
 
     toString: {
         value: function () {
-            return BigInt.prototype.toString.call(this, 16);
+            return BigInt.prototype.toString.call(this, 16).padStart(32, 0);
         }
     },
 
