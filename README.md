@@ -1,11 +1,19 @@
 
-# 🌌 BigVec: A 128-bit Scalar Primitive for a New Era of JavaScript 🌌
+# BigVec: A 128-bit Primitive
+<p align="center">
+  <br />
+  <strong><code>BigVec</code></strong>
+  <br />
+  A micro-library that brings <code>128bit scalar</code> to doubles of BigInt and <code>SIMD</code> for processes that stores an <code>UUID (v4)</code>.
+</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/version-1.0.0-blue.svg" alt="Version" />
   <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License" />
   <img src="https://img.shields.io/badge/status-stable-brightgreen.svg" alt="Status" />
 </p>
+---
+
 
 In the vast universe of JavaScript, we have numbers, strings, and even `BigInt`. But what if you could hold the power of a 128-bit vector in a single, elegant, scalar value? What if you could manipulate UUIDs, hashes, and other large numbers with the grace of a primitive?
 
