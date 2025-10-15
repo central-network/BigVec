@@ -62,7 +62,7 @@ const myVec = BigVec.random();
 console.log(myVec);
 ```
 
-![Debugger Preview](https://i.imgur.com/your-image.png) <!-- You can replace this with an actual image -->
+![Debugger Preview](ssconsole.png) <!-- You can replace this with an actual image -->
 
 ### `BigVec128Array` in Action
 
