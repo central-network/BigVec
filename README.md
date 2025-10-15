@@ -1,8 +1,7 @@
-
-# BigVec: A 128-bit Primitive
+# BigVec / BigVec128Array
 <p align="center">
   <br />
-  <strong><code>BigVec and BigVec128Array</code></strong>
+  <strong><code>128-bit Primitive Operations</code></strong>
   <br />
   A micro-library that brings a new primitive and typed array for <code>128bit scalars</code> which doubles of BigInt capacity and useful for <code>SIMD</code> operations that can operate over <code>UUID (v4)</code> values.
 </p>
@@ -14,20 +13,19 @@
 </p>
 ---
 
-
-In the vast universe of JavaScript, we have numbers, strings, and even `BigInt`. But what if you could hold the power of a 128-bit vector in a single, elegant, scalar value? What if you could manipulate UUIDs, hashes, and other large numbers with the grace of a primitive?
+In the vast cosmos of JavaScript, we are given numbers, strings, and even the mighty `BigInt`. But what if you could hold the universe of a 128-bit vector in a single, elegant, scalar value? What if you could command UUIDs, hashes, and other colossal numbers with the grace of a primitive?
 
 **✨ Behold, `BigVec`. ✨**
 
-`BigVec` is not just a library; it's a paradigm shift. It's a novel data type that brings the power of 128-bit vectors to your fingertips, wrapped in a beautiful, intuitive API. It's the bridge between the high-level world of JavaScript objects and the raw, untamed power of binary data.
+`BigVec` is not merely a library; it is a paradigm shift. It is a novel data type, a new star in the JavaScript sky, bringing the power of 128-bit vectors to your fingertips, wrapped in a beautiful, intuitive API. It is the bridge between the ethereal world of high-level JavaScript objects and the raw, untamed power of binary data.
 
-![Console Preview](ssconsole.png) <!-- You can replace this with an actual image -->
+![Console Preview](ssconsole.png)
 
 ## 🎨 The Vision: The Art of Intelligence 🎨
 
-`BigVec` is a testament to the "Art of Intelligence." It's a creation born from a deep understanding of JavaScript's soul, a desire to push the boundaries of what's possible. It's a symphony of `BigInt`'s flexibility and `ArrayBuffer`'s raw power.
+`BigVec` is a testament to the "Art of Intelligence." It is a creation born from a deep, intimate understanding of JavaScript's soul, a burning desire to push the boundaries of what is possible. It is a symphony of `BigInt`'s flexibility and `ArrayBuffer`'s raw, unyielding power.
 
-We didn't just want to create another utility. We wanted to forge a new primitive. And while `BigVec` may not be a true primitive in the eyes of the JavaScript engine, it dances like one in your code. It's a scalar value, a single entity, that you can pass, compare, and command with effortless grace.
+We did not just want to create another utility. We wanted to forge a new primitive. And while `BigVec` may not be a true primitive in the eyes of the JavaScript engine, it dances like one in your code. It is a scalar value, a single entity, that you can pass, compare, and command with effortless grace.
 
 ## 🚀 Features 🚀
 
@@ -72,7 +70,7 @@ const myVec = BigVec.random();
 console.log(myVec);
 ```
 
-![Debugger Preview](ssdebugger.png) <!-- You can replace this with an actual image -->
+![Debugger Preview](ssdebugger.png)
 
 ### `BigVec128Array` in Action
 
@@ -97,9 +95,9 @@ console.log("Filtered:", filtered.toHEXArray());
 
 ## 🔮 The Magic Revealed 🔮
 
-You might be wondering, "How does this sorcery work?" The secret lies in a beautiful, elegant hack.
+You may be wondering, "How does this sorcery work?" The secret lies in a beautiful, elegant hack.
 
-`BigVec` masterfully leverages JavaScript's `BigInt` to cradle its 128-bit soul. When a `BigVec` is born, we're actually creating a `BigInt` object and then bestowing upon it the prototype of `BigVec.prototype`. This act of creation gives us the power to imbue the `BigInt` with our own methods, effectively forging a new primitive type.
+`BigVec` masterfully leverages JavaScript's `BigInt` to cradle its 128-bit soul. When a `BigVec` is born, we are actually creating a `BigInt` object and then bestowing upon it the prototype of `BigVec.prototype`. This act of creation gives us the power to imbue the `BigInt` with our own methods, effectively forging a new primitive type.
 
 The true magic, the sleight of hand, is revealed when you invoke `toString(16)` on a `BigVec`. Because our `BigVec` is a `BigInt` in disguise, we can summon `BigInt.prototype.toString.call(this, 16)` to conjure a 32-character hex string, a perfect representation of the 128-bit value. This is the key that unlocks the gates to UUIDs, hashes, and a universe of 128-bit data formats.
 
@@ -111,12 +109,14 @@ The true magic, the sleight of hand, is revealed when you invoke `toString(16)` 
 *   `BigVec.fromUUID(uuid)`: Creates a `BigVec` from a UUID string.
 *   `BigVec.fromString(hexString)`: Creates a `BigVec` from a hex string.
 *   `BigVec.fromBigInt(bigInt)`: Creates a `BigVec` from a `BigInt`.
+*   `BigVec.fromArray(array)`: Creates a `BigVec` from an array of bytes.
 *   `BigVec.random()`: Creates a random `BigVec`.
 *   `vec.toUUID()`: Converts a `BigVec` to a UUID string.
 *   `vec.toHEX()`: Converts a `BigVec` to a hex string.
 *   `vec.toString()`: Converts a `BigVec` to a 32-character hex string.
 *   `vec.toBigInt()`: Converts a `BigVec` to a `BigInt`.
 *   `vec.toArray()`: Converts a `BigVec` to an array of bytes.
+*   `vec.toArrayView(TypedArray)`: Converts a `BigVec` to a `TypedArray` view.
 *   `vec.toBuffer()`: Converts a `BigVec` to an `ArrayBuffer`.
 
 ### `BigVec128Array`
@@ -132,9 +132,13 @@ The true magic, the sleight of hand, is revealed when you invoke `toString(16)` 
 
 ## 💖 A New Primitive for a New Era 💖
 
-`BigVec` is more than a library; it's a love letter to JavaScript. It's a tool for building the next generation of applications, from high-performance databases to decentralized identity systems.
+`BigVec` is more than a library; it is a love letter to JavaScript. It is a tool for building the next generation of applications, from high-performance databases to decentralized identity systems.
 
 We invite you to join us on this odyssey. Explore the code, dance with the examples, and let your imagination soar. The future of data in JavaScript is here, and its name is `BigVec`.
+
+## 🤝 Contributing 🤝
+
+We welcome contributions of all kinds. If you have a feature request, a bug report, or a pull request, please don't hesitate to open an issue or a PR.
 
 ## 📜 License 📜
 
