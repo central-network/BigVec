@@ -51,11 +51,12 @@ export function BigVec128Array () {
         length      = buffer;
         byteLength  = length * BYTES_PER_ELEMENT;
         buffer      = new ArrayBuffer(byteLength);
+
         return new BigVec128Array(buffer, byteOffset, length);
     }
 
-    byteLength = buffer.byteLength - byteOffset;
-    length   ||= byteLength / BYTES_PER_ELEMENT;
+    length   ||= (buffer.byteLength - byteOffset) / BYTES_PER_ELEMENT;
+    byteLength = length * BYTES_PER_ELEMENT;
 
     Object.defineProperties(this, {
         buffer      : { value: buffer },
@@ -64,7 +65,9 @@ export function BigVec128Array () {
         length      : { value: length },
     });
 
-    this.defineIndices(indices);
+    if (indices !== false) {
+        this.defineIndices(indices);
+    }
 
     return this;
 }
@@ -255,7 +258,7 @@ Object.defineProperties(BigVec.prototype, {
                 color       : { r : v0, g : v1, b : v2, a : v3, __proto__ : null },
                 view        : {
                     __proto__ : null,
-                    v128 : BigVec128Array.of(this),
+                    v128  : this.toArrayView(BigVec128Array),
                     f64x2 : this.toArrayView(Float64Array),
                     f32x4 : this.toArrayView(Float32Array),
                     u64x2 : this.toArrayView(BigUint64Array),
@@ -311,7 +314,12 @@ Object.defineProperties(BigVec128Array.prototype, {
             const [value, index = 0] = arguments;
             const vector             = BigVec(value);
             
-            this.toArrayView().set(vector.toArrayView(), index * BYTES_PER_ELEMENT);
+            this.toArrayView(
+                Uint8Array,
+                index * BYTES_PER_ELEMENT,
+                BYTES_PER_ELEMENT
+            ).set(vector.toArrayView());
+            
             this.defineIndex(index, vector);
         }
     },
@@ -356,7 +364,7 @@ Object.defineProperties(BigVec128Array.prototype, {
             if (!vector) {
                 const view = new Uint8Array(
                     this.buffer, 
-                    index * BYTES_PER_ELEMENT, 
+                    this.byteOffset + index * BYTES_PER_ELEMENT, 
                     BYTES_PER_ELEMENT
                 );
 
@@ -448,10 +456,10 @@ Object.defineProperties(BigVec128Array.prototype, {
             let [
                 TypedArray = Uint8Array, 
                 byteOffset = 0, 
-                length = (this.byteLength - byteOffset) / TypedArray.BYTES_PER_ELEMENT
+                length     = (this.byteLength - byteOffset) / TypedArray.BYTES_PER_ELEMENT
             ] = arguments;
             
-            return new TypedArray( this.buffer, byteOffset + this.byteOffset, length )
+            return new TypedArray( this.buffer, byteOffset, length )
         }
     },
 
