@@ -2,9 +2,9 @@
 # BigVec: A 128-bit Primitive
 <p align="center">
   <br />
-  <strong><code>BigVec</code></strong>
+  <strong><code>BigVec and BigVec128Array</code></strong>
   <br />
-  A micro-library that brings <code>128bit scalar</code> to doubles of BigInt and <code>SIMD</code> for processes that stores an <code>UUID (v4)</code>.
+  A micro-library that brings a new primitive and typed array for <code>128bit scalars</code> which doubles of BigInt capacity and useful for <code>SIMD</code> operations that can operate over <code>UUID (v4)</code> values.
 </p>
 
 <p align="center">
