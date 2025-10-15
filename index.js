@@ -651,14 +651,14 @@ Reflect.defineProperty(self, "BigVec", { value: BigVec, enumerable: true, config
 Reflect.defineProperty(self, "BigVec128Array", { value: BigVec128Array, enumerable: true, configurable: true, writable: true });
 
 Reflect.defineProperty(DataView.prototype, "getBigVec128", {
-    value : function () {
+    value : function getBigVec128 () {
         const [offset = 0] = arguments;
         return BigVec.fromDataView(this, offset);
     }
 });
 
 Reflect.defineProperty(DataView.prototype, "setBigVec128", {
-    value : function () {
+    value : function setBigVec128 () {
         const [offset = 0, value] = arguments;
 
         new Uint8Array(
