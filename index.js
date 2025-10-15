@@ -89,13 +89,14 @@ Object.defineProperties(BigVec, {
     fromString: {
         value: function () {
             let [string = ""] = arguments;
-            string = string.replaceAll(/[^x0-9a-f]/gi, "");
 
-            if (string.startsWith("0x") === false) {
-                string = `0x${string}`
+            if (string.startsWith("0x")) {
+                string = string.substring(2)
             }
+            
+            string = string.replaceAll("-", "").match(/[0-9a-f]{2}/gi).map(v => v.padStart(2,0)).join("")
 
-            return this.fromBigInt(BigInt(string));
+            return this.fromBigInt(BigInt(`0x${string}`));
         }
     },
     
@@ -197,7 +198,7 @@ Object.defineProperties(BigVec.prototype, {
 
     toString: {
         value: function () {
-            return BigInt.prototype.toString.call(this, 16).padStart(32, 0);
+            return BigInt.prototype.toString.call(this, 16);
         }
     },
 
@@ -215,7 +216,7 @@ Object.defineProperties(BigVec.prototype, {
 
     toUUID: {
         value: function () {
-            return this.toString().replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, "$1-$2-$3-$4-$5");
+            return this.toString().replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, "$1-$2-$3-$4-$5");;
         }
     },
 
@@ -338,8 +339,14 @@ Object.defineProperties(BigVec128Array.prototype, {
         value : function () {
             let [index = 0] = arguments;
             if  (index < 0) { index += this.length };
-            
-            return Reflect.get(this, index)
+
+            const view = new Uint8Array(
+                this.buffer, 
+                this.byteOffset + index * BYTES_PER_ELEMENT, 
+                BYTES_PER_ELEMENT
+            );
+
+            return BigVec.fromArrayView(view);
         }
     },
 
@@ -361,18 +368,8 @@ Object.defineProperties(BigVec128Array.prototype, {
         value : function () {
             let [index=0, vector] = arguments;
 
-            if (!vector) {
-                const view = new Uint8Array(
-                    this.buffer, 
-                    this.byteOffset + index * BYTES_PER_ELEMENT, 
-                    BYTES_PER_ELEMENT
-                );
-
-                vector = BigVec.fromArrayView(view); 
-            }
-            
             Object.defineProperty(this, index, {
-                value : vector,
+                value : vector || this.at(index),
                 enumerable: true,
                 configurable: true,
                 writable: false
