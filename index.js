@@ -69,6 +69,8 @@ export function BigVec128Array () {
         this.defineIndices(indices);
     }
 
+    Object.freeze(this);
+
     return this;
 }
 
