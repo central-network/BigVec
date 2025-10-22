@@ -55,7 +55,7 @@ export function BigVec128Array () {
         return new BigVec128Array(buffer, byteOffset, length);
     }
 
-    length   ||= (buffer.byteLength - byteOffset) / BYTES_PER_ELEMENT;
+    length   ??= (buffer.byteLength - byteOffset) / BYTES_PER_ELEMENT;
     byteLength = length * BYTES_PER_ELEMENT;
 
     Object.defineProperties(this, {
