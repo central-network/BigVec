@@ -340,7 +340,25 @@ Object.defineProperties( BigVec128Array.prototype, {
 
     values                  : { value : values },
 
-    setValue : {
+    findEmptyIndex          : {
+        value : function () {
+            return this.findIndex(v => !-v)
+        }
+    },
+
+    findLastEmptyIndex      : {
+        value : function () {
+            return this.findLastIndex(v => !-v)
+        }
+    },
+
+    filterEmptyIndexes      : {
+        value : function () {
+            return this.filter(v => !-v)
+        }
+    },
+
+    setValue                : {
         value : function () {
             const [value, index = 0] = arguments;
             const vector             = BigVec(value);
