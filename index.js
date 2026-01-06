@@ -240,7 +240,10 @@ Object.defineProperties(BigVec.prototype, {
     },
 
     [Symbol.toPrimitive]: {
-        value: function () {
+        value: function (hint) {
+            if (hint === "string") {
+                return this.toString();
+            }
             return this.toBigInt();
         }
     },
