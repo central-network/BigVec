@@ -248,6 +248,45 @@ Object.defineProperties(BigVec.prototype, {
         }
     },
 
+    forEachByte: {
+        value: function (callbackFn, thisArg = this) {
+            const array = this.toArrayView();
+            let index = 0, byte, length = array.length;
+            while (length--) {
+                byte = array[index];
+                callbackFn.call(thisArg, byte, index, array);
+                index++;
+            }
+        }
+    },
+
+    [Symbol.iterator]: {
+        value: function* () {
+            const array = this.toArray();
+            let index = 0;
+
+            yield array[index++];
+            yield array[index++];
+            yield array[index++];
+            yield array[index++];
+
+            yield array[index++];
+            yield array[index++];
+            yield array[index++];
+            yield array[index++];
+
+            yield array[index++];
+            yield array[index++];
+            yield array[index++];
+            yield array[index++];
+
+            yield array[index++];
+            yield array[index++];
+            yield array[index++];
+            yield array[index++];
+        }
+    },
+
     ["{{Debugger}}"]: {
         get: function () {
             const [v0, v1, v2, v3] = this.toArrayView(Float32Array);
