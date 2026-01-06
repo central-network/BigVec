@@ -1,17 +1,17 @@
 export const BYTES_PER_ELEMENT = 16;
 
-export function BigVec () {
+export function BigVec() {
     const value = arguments[0];
 
     if (value instanceof BigVec) {
         return value;
     };
-    
+
     if (typeof value === "string") {
         return BigVec.fromString(...arguments);
     }
 
-    if (typeof value === "undefined" || !value) {
+    if (typeof value === "undefined" || !value) {
         return BigVec.fromBigInt(0n);;
     };
 
@@ -43,26 +43,26 @@ export function BigVec () {
     throw new TypeError(`Invalid type for BigVec(${value})`);
 }
 
-export function BigVec128Array () {
+export function BigVec128Array() {
 
     let [buffer, byteOffset = 0, length, indices = []] = arguments, byteLength;
-    
+
     if (isNaN(buffer) === false) {
-        length      = buffer;
-        byteLength  = length * BYTES_PER_ELEMENT;
-        buffer      = new ArrayBuffer(byteLength);
+        length = buffer;
+        byteLength = length * BYTES_PER_ELEMENT;
+        buffer = new ArrayBuffer(byteLength);
 
         return new BigVec128Array(buffer, byteOffset, length);
     }
 
-    length   ??= (buffer.byteLength - byteOffset) / BYTES_PER_ELEMENT;
+    length ??= (buffer.byteLength - byteOffset) / BYTES_PER_ELEMENT;
     byteLength = length * BYTES_PER_ELEMENT;
 
     Object.defineProperties(this, {
-        buffer      : { value: buffer },
-        byteOffset  : { value: byteOffset },
-        byteLength  : { value: byteLength },
-        length      : { value: length },
+        buffer: { value: buffer },
+        byteOffset: { value: byteOffset },
+        byteLength: { value: byteLength },
+        length: { value: length },
     });
 
     if (indices !== false) {
@@ -75,8 +75,8 @@ export function BigVec128Array () {
 }
 
 Object.defineProperties(BigVec, {
-    from : {
-        value : function () {
+    from: {
+        value: function () {
             return BigVec(...arguments);
         }
     },
@@ -87,7 +87,7 @@ Object.defineProperties(BigVec, {
             return this.fromString(uuid);
         }
     },
-    
+
     fromString: {
         value: function () {
             let [string = "0"] = arguments;
@@ -99,7 +99,7 @@ Object.defineProperties(BigVec, {
             return this.fromString(`0x${string.replaceAll("-", "")}`);
         }
     },
-    
+
     fromBigInt: {
         value: function () {
             const [bigint = 0n] = arguments;
@@ -109,20 +109,20 @@ Object.defineProperties(BigVec, {
             return vec;
         }
     },
-    
+
     random: {
         value: function () {
             return this.fromUUID(crypto.randomUUID());
         }
     },
-    
+
     fromReducedString: {
         value: function () {
             const [value = ""] = arguments;
 
             let t = `${value}`
             let i = t.length - 1;
-            let l = BYTES_PER_ELEMENT-1;
+            let l = BYTES_PER_ELEMENT - 1;
 
             let hex = "", char = "";
             const tarray = new Uint8Array(BYTES_PER_ELEMENT);
@@ -143,11 +143,11 @@ Object.defineProperties(BigVec, {
             return this.fromArrayView(tarray);
         }
     },
-    
+
     fromBuffer: {
         value: function () {
-            const [buffer, offset = 0]  = arguments;
-            const uInt8ByteArrayView    = new Uint8Array(buffer, offset, BYTES_PER_ELEMENT);
+            const [buffer, offset = 0] = arguments;
+            const uInt8ByteArrayView = new Uint8Array(buffer, offset, BYTES_PER_ELEMENT);
 
             return this.fromArray(Array.from(uInt8ByteArrayView));
         }
@@ -177,7 +177,7 @@ Object.defineProperties(BigVec, {
     fromArray: {
         value: function () {
             const [array = []] = arguments;
-            return this.fromString(`0x${array.map(v => v.toString(16).padStart(2,0)).join("")}`)
+            return this.fromString(`0x${array.map(v => v.toString(16).padStart(2, 0)).join("")}`)
         }
     }
 });
@@ -226,7 +226,7 @@ Object.defineProperties(BigVec.prototype, {
             return new TypedArray(this.toBuffer());
         }
     },
-    
+
     valueOf: {
         value: function () {
             return this.toBigInt();
@@ -239,37 +239,37 @@ Object.defineProperties(BigVec.prototype, {
         }
     },
 
-    [ Symbol.toPrimitive ] : {
-        value : function () {
+    [Symbol.toPrimitive]: {
+        value: function () {
             return this.toBigInt();
         }
     },
 
-    [ "{{Debugger}}" ] : {
-        get : function () {
+    ["{{Debugger}}"]: {
+        get: function () {
             const [v0, v1, v2, v3] = this.toArrayView(Float32Array);
             return {
-                __proto__   : null,
-                hex         : this.toHEX(),
-                uuid        : this.toUUID(),
-                string      : this.toString(),
-                buffer      : this.toBuffer(),
-                array       : this.toArray(),
-                position    : { x : v0, y : v1, z : v2, w : v3, __proto__ : null },
-                color       : { r : v0, g : v1, b : v2, a : v3, __proto__ : null },
-                view        : {
-                    __proto__ : null,
-                    v128  : this.toArrayView(BigVec128Array),
-                    f64x2 : this.toArrayView(Float64Array),
-                    f32x4 : this.toArrayView(Float32Array),
-                    u64x2 : this.toArrayView(BigUint64Array),
-                    u32x4 : this.toArrayView(Uint32Array),
-                    u16x8 : this.toArrayView(Uint16Array),
-                    u8x16 : this.toArrayView(Uint8Array),
-                    i64x2 : this.toArrayView(BigInt64Array),
-                    i32x4 : this.toArrayView(Int32Array),
-                    i16x8 : this.toArrayView(Int16Array),
-                    i8x16 : this.toArrayView(Int8Array),
+                __proto__: null,
+                hex: this.toHEX(),
+                uuid: this.toUUID(),
+                string: this.toString(),
+                buffer: this.toBuffer(),
+                array: this.toArray(),
+                position: { x: v0, y: v1, z: v2, w: v3, __proto__: null },
+                color: { r: v0, g: v1, b: v2, a: v3, __proto__: null },
+                view: {
+                    __proto__: null,
+                    v128: this.toArrayView(BigVec128Array),
+                    f64x2: this.toArrayView(Float64Array),
+                    f32x4: this.toArrayView(Float32Array),
+                    u64x2: this.toArrayView(BigUint64Array),
+                    u32x4: this.toArrayView(Uint32Array),
+                    u16x8: this.toArrayView(Uint16Array),
+                    u8x16: this.toArrayView(Uint8Array),
+                    i64x2: this.toArrayView(BigInt64Array),
+                    i32x4: this.toArrayView(Int32Array),
+                    i16x8: this.toArrayView(Int16Array),
+                    i8x16: this.toArrayView(Int8Array),
                 }
             };
         }
@@ -278,119 +278,119 @@ Object.defineProperties(BigVec.prototype, {
 
 Object.defineProperties(BigVec128Array, {
 
-    BYTES_PER_ELEMENT : { 
-        value: BYTES_PER_ELEMENT 
+    BYTES_PER_ELEMENT: {
+        value: BYTES_PER_ELEMENT
     },
 
-    from : {
-        value : function ( elements, mapFn = v => v, thisArg = null ) {
+    from: {
+        value: function (elements, mapFn = v => v, thisArg = null) {
             const values = Object.values(elements);
             const vec128 = new this(values.length);
-            
+
             vec128.set(values.map(mapFn.bind(thisArg)));
             return vec128;
         }
     },
 
-    of : {
-        value : function ( ...elements ) {
+    of: {
+        value: function (...elements) {
             return this.from(elements);
         }
     },
 
-    random : {
-        value : function () {
+    random: {
+        value: function () {
             const [length = 1] = arguments;
             return new this(length).random();
         }
     },
 });
 
-function values () {
-    const done = { __proto__ : null, done: !0, value: null };
-    const next = { __proto__ : null, done: !1, value: null };
+function values() {
+    const done = { __proto__: null, done: !0, value: null };
+    const next = { __proto__: null, done: !1, value: null };
 
-    let index  = 0, 
+    let index = 0,
         length = this.length;
 
     return Iterator.from({
-        __proto__   : null, 
+        __proto__: null,
 
-        next        : () => {
-            if (!length--) return done; 
-            next.value = this.at(index++); 
+        next: () => {
+            if (!length--) return done;
+            next.value = this.at(index++);
             return next;
         }
     });
 };
 
-function dispose () {
+function dispose() {
     console.warn("BigVec128Array instances cannot be disposed.");
 }
- 
-Object.defineProperties( BigVec128Array.prototype, {
 
-    [ Symbol.toStringTag ]  : { value : "BigVec128Array" },
+Object.defineProperties(BigVec128Array.prototype, {
 
-    [ Symbol.dispose ]      : { value : dispose },
+    [Symbol.toStringTag]: { value: "BigVec128Array" },
 
-    [ Symbol.iterator ]     : { value : values },
+    [Symbol.dispose]: { value: dispose },
 
-    BYTES_PER_ELEMENT       : { value: BYTES_PER_ELEMENT },
+    [Symbol.iterator]: { value: values },
 
-    values                  : { value : values },
+    BYTES_PER_ELEMENT: { value: BYTES_PER_ELEMENT },
 
-    findEmptyIndex          : {
-        value : function () {
+    values: { value: values },
+
+    findEmptyIndex: {
+        value: function () {
             return this.findIndex(v => !-v)
         }
     },
 
-    findLastEmptyIndex      : {
-        value : function () {
+    findLastEmptyIndex: {
+        value: function () {
             return this.findLastIndex(v => !-v)
         }
     },
 
-    filterEmptyIndexes      : {
-        value : function () {
+    filterEmptyIndexes: {
+        value: function () {
             return this.filter(v => !-v)
         }
     },
 
-    setValue                : {
-        value : function () {
+    setValue: {
+        value: function () {
             const [value, index = 0] = arguments;
-            const vector             = BigVec(value);
-            
+            const vector = BigVec(value);
+
             this.toArrayView(
                 Uint8Array,
                 index * BYTES_PER_ELEMENT,
                 BYTES_PER_ELEMENT
             ).set(vector.toArrayView());
-            
+
             this.defineIndex(index, vector);
         }
     },
 
-    set : {
-        value : function () {
+    set: {
+        value: function () {
             const [arrayLike, index = 0] = arguments;
 
             arrayLike.forEach((element, i) => {
-                this.setValue(element, i + index); 
+                this.setValue(element, i + index);
             });
         }
     },
 
-    at : {
-        value : function () {
+    at: {
+        value: function () {
             let [index = 0] = arguments;
-            if  (index < 0) { index += this.length };
+            if (index < 0) { index += this.length };
 
             const view = new Uint8Array(
-                this.buffer, 
-                this.byteOffset + index * BYTES_PER_ELEMENT, 
+                this.buffer,
+                this.byteOffset + index * BYTES_PER_ELEMENT,
                 BYTES_PER_ELEMENT
             );
 
@@ -398,97 +398,97 @@ Object.defineProperties( BigVec128Array.prototype, {
         }
     },
 
-    fill : {
-        value : function () {
-            let [element, start=0, end=this.length] = arguments;
-            return this.set(new Array(end-start).fill(element), start), this;
+    fill: {
+        value: function () {
+            let [element, start = 0, end = this.length] = arguments;
+            return this.set(new Array(end - start).fill(element), start), this;
         }
     },
 
-    random : {
-        value : function () {
+    random: {
+        value: function () {
             this.set(new Array(this.length).fill().map(BigVec.random.bind(BigVec)));
             return this;
         }
     },
 
-    defineIndex : {
-        value : function () {
-            let [index=0, vector] = arguments;
+    defineIndex: {
+        value: function () {
+            let [index = 0, vector] = arguments;
 
             Object.defineProperty(this, index, {
-                value : vector || this.at(index),
+                value: vector || this.at(index),
                 enumerable: true,
                 configurable: true,
                 writable: false
             })
-        } 
+        }
     },
 
-    defineIndices : {
-        value : function () {
+    defineIndices: {
+        value: function () {
             let [indices = []] = arguments;
-            for (let i=0; i<this.length; i++) {
+            for (let i = 0; i < this.length; i++) {
                 this.defineIndex(i, indices[i])
             }
-        } 
+        }
     },
 
-    forEach : {
-        value : function () {
+    forEach: {
+        value: function () {
             let [mapFn = v => v, thisArg = null] = arguments;
-            for (let i=0; i<this.length; i++) {
+            for (let i = 0; i < this.length; i++) {
                 mapFn.call(thisArg, this.at(i), i, this);
             }
-        } 
+        }
     },
 
-    map : {
-        value : function () {
+    map: {
+        value: function () {
             let [mapFn = v => v, thisArg = null] = arguments;
 
-            const length      = this.length;
+            const length = this.length;
             const vectorArray = new BigVec128Array(length);
-            const vectorView  = vectorArray.toArrayView();
+            const vectorView = vectorArray.toArrayView();
 
-            for (let i=0; i<length; i++) {
+            for (let i = 0; i < length; i++) {
 
-                const item       = this.at(i);
-                const element    = mapFn.call(thisArg, item, i, this);
-                const view       = BigVec(element).toArrayView(); 
+                const item = this.at(i);
+                const element = mapFn.call(thisArg, item, i, this);
+                const view = BigVec(element).toArrayView();
                 const byteOffset = i * BYTES_PER_ELEMENT;
 
                 vectorView.set(view, byteOffset);
             }
 
             return vectorArray;
-        } 
+        }
     },
 
-    subarray : {
-        value : function () {
+    subarray: {
+        value: function () {
             let [begin = 0, end = this.length] = arguments;
-            const length        = end - begin;
-            const byteOffset    = begin * BYTES_PER_ELEMENT;
-            const indices       = new Array(length).fill().map((v,i) => this.at(begin + i));
+            const length = end - begin;
+            const byteOffset = begin * BYTES_PER_ELEMENT;
+            const indices = new Array(length).fill().map((v, i) => this.at(begin + i));
 
             return new BigVec128Array(this.buffer, byteOffset, length, indices);
         }
     },
 
-    slice : {
-        value : function () {
+    slice: {
+        value: function () {
             let [begin = 0, end = this.length] = arguments;
 
-            const length        = end - begin;
-            const byteOffset    = begin * BYTES_PER_ELEMENT;
-            const byteLength    = length * BYTES_PER_ELEMENT;
+            const length = end - begin;
+            const byteOffset = begin * BYTES_PER_ELEMENT;
+            const byteLength = length * BYTES_PER_ELEMENT;
 
-            const vectorArray   = new BigVec128Array(length);
+            const vectorArray = new BigVec128Array(length);
 
             new Uint8Array(vectorArray.buffer).set(
                 new Uint8Array(this.buffer, byteOffset, byteLength)
-            ) 
+            )
 
             vectorArray.defineIndices();
 
@@ -496,195 +496,195 @@ Object.defineProperties( BigVec128Array.prototype, {
         }
     },
 
-    toArrayView : {
-        value : function () {
+    toArrayView: {
+        value: function () {
             let [
-                TypedArray = Uint8Array, 
-                byteOffset = 0, 
-                length     = (this.byteLength - byteOffset) / TypedArray.BYTES_PER_ELEMENT
+                TypedArray = Uint8Array,
+                byteOffset = 0,
+                length = (this.byteLength - byteOffset) / TypedArray.BYTES_PER_ELEMENT
             ] = arguments;
-            
-            return new TypedArray( this.buffer, byteOffset, length )
+
+            return new TypedArray(this.buffer, byteOffset, length)
         }
     },
 
-    toArray : {
-        value : function () {
-            const [begin=0, end=this.length] = arguments;
-            return new Array(end-begin).fill().map((v,i) => this.at(begin+i));
+    toArray: {
+        value: function () {
+            const [begin = 0, end = this.length] = arguments;
+            return new Array(end - begin).fill().map((v, i) => this.at(begin + i));
         }
     },
 
-    toJSON : {
-        value : function () {
+    toJSON: {
+        value: function () {
             return this.toHEXArray().join(",");
         }
     },
 
-    toUUIDArray : {
-        value : function () {
+    toUUIDArray: {
+        value: function () {
             return this.toArray(...arguments).map(v => v.toUUID());
         }
     },
 
-    toHEXArray : {
-        value : function () {
+    toHEXArray: {
+        value: function () {
             return this.toArray(...arguments).map(v => v.toHEX());
         }
     },
 
-    toBufferArray : {
-        value : function () {
+    toBufferArray: {
+        value: function () {
             return this.toArray(...arguments).map(v => v.toBuffer());
         }
     },
 
-    toViewArray : {
-        value : function () {
+    toViewArray: {
+        value: function () {
             const [TypedArray = Uint8Array, ...args] = arguments
             return this.toArray(...args).map(v => v.toArrayView(TypedArray));
         }
     },
 
-    toStringArray : {
-        value : function () {
+    toStringArray: {
+        value: function () {
             return this.toArray(...arguments).map(v => v.toString());
         }
     },
 
-    toText : {
-        value : function () {
+    toText: {
+        value: function () {
             return this.toString("");
         }
     },
 
-    toString : {
-        value : function () {
+    toString: {
+        value: function () {
             const [separator = ","] = arguments;
             return this.toStringArray().join(separator);
         }
     },
 
-    includes : {
-        value : function () {
+    includes: {
+        value: function () {
             const [element, fromIndex = 0] = arguments;
             return this.toArray().includes(element, fromIndex);
         }
     },
 
-    indexOf : {
-        value : function () {
+    indexOf: {
+        value: function () {
             const [element, fromIndex = 0] = arguments;
             return this.toArray().indexOf(element, fromIndex);
         }
     },
 
-    lastIndexOf : {
-        value : function () {
+    lastIndexOf: {
+        value: function () {
             const [element, fromIndex = this.length - 1] = arguments;
             return this.toArray().lastIndexOf(element, fromIndex);
         }
     },
 
-    keys : {
-        value : function () {
-            return new Array(this.length).fill().map((v,i) => i); 
+    keys: {
+        value: function () {
+            return new Array(this.length).fill().map((v, i) => i);
         }
     },
 
-    entries : {
-        value : function () {
-            return new Array(this.length).fill().map((v,i) => [i, this.at(i)]);
+    entries: {
+        value: function () {
+            return new Array(this.length).fill().map((v, i) => [i, this.at(i)]);
         }
     },
 
-    join : {
-        value : function () {
+    join: {
+        value: function () {
             return this.toString(...arguments)
         }
     },
 
-    filter : {
-        value : function () {
+    filter: {
+        value: function () {
             return this.toArray().filter(...arguments);
         }
     },
 
-    find : {
-        value : function () {
+    find: {
+        value: function () {
             return this.toArray().find(...arguments);
         }
     },
 
-    findIndex : {
-        value : function () {
+    findIndex: {
+        value: function () {
             return this.toArray().findIndex(...arguments);
         }
     },
 
-    reduce : {
-        value : function () {
+    reduce: {
+        value: function () {
             return this.toArray().reduce(...arguments);
         }
     },
 
-    reduceRight : {
-        value : function () {
+    reduceRight: {
+        value: function () {
             return this.toArray().reduceRight(...arguments);
         }
     },
-    
-    findLast : {
-        value : function () {
+
+    findLast: {
+        value: function () {
             return this.toArray().findLast(...arguments);
         }
     },
-    
-    findLastIndex : {
-        value : function () {
+
+    findLastIndex: {
+        value: function () {
             return this.toArray().findLastIndex(...arguments);
         }
     },
-    
-    every : {
-        value : function () {
+
+    every: {
+        value: function () {
             return this.toArray().every(...arguments);
         }
     },
-    
-    some : {
-        value : function () {
+
+    some: {
+        value: function () {
             return this.toArray().some(...arguments);
         }
     },
-    
-    sort : {
-        value : function () {
+
+    sort: {
+        value: function () {
             return this.set(this.toArray().sort(...arguments));
         }
     },
 
-    reverse : {
-        value : function () {
+    reverse: {
+        value: function () {
             return this.set(this.toArray().reverse(...arguments));
         }
     },
 
-    copyWithin : {
-        value : function () {
+    copyWithin: {
+        value: function () {
             const [target, start = 0, end = this.length] = arguments;
 
             const arrayView = this.toArrayView(Uint8Array);
-            
+
             arrayView.copyWithin(
-                target * BYTES_PER_ELEMENT, 
-                start * BYTES_PER_ELEMENT, 
-                end * BYTES_PER_ELEMENT 
+                target * BYTES_PER_ELEMENT,
+                start * BYTES_PER_ELEMENT,
+                end * BYTES_PER_ELEMENT
             );
 
             const finish = target + (end - start);
 
-            for (let i=target; i<finish; i++) {
+            for (let i = target; i < finish; i++) {
                 this.defineIndex(i);
             }
 
@@ -698,20 +698,22 @@ Reflect.defineProperty(self, "BigVec", { value: BigVec, enumerable: true, config
 Reflect.defineProperty(self, "BigVec128Array", { value: BigVec128Array, enumerable: true, configurable: true, writable: true });
 
 Reflect.defineProperty(DataView.prototype, "getBigVec128", {
-    value : function getBigVec128 () {
+    value: function getBigVec128() {
         const [offset = 0] = arguments;
         return BigVec.fromDataView(this, offset);
     }
 });
 
 Reflect.defineProperty(DataView.prototype, "setBigVec128", {
-    value : function setBigVec128 () {
+    value: function setBigVec128() {
         const [offset = 0, value] = arguments;
 
         new Uint8Array(
-            this.buffer, 
-            this.byteOffset + offset, 
+            this.buffer,
+            this.byteOffset + offset,
             BYTES_PER_ELEMENT
-        ).set( BigVec(value).toArrayView() );
+        ).set(BigVec(value).toArrayView());
     }
 });
+
+export default BigVec;
