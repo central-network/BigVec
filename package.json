@@ -12,9 +12,13 @@
   },
   "license": "ISC",
   "author": "",
-  "type": "commonjs",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "localsharedmemory": "^1.1.1",
+    "turbouuid": "^0.0.6"
   }
 }

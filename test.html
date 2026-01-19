@@ -1,0 +1,80 @@
+<script type="module">
+    import "./node_modules/turbouuid/index.js"
+    import { BigVec, BigVec128Array } from "./index.js"
+
+    console.log(BigVec.fromUUID('f81d4fae-7dec-11d0-a765-00a0c91e6bf6'));
+
+    const arr = new BigVec128Array(3).random();
+    console.log(arr);
+
+    turboUUID.base().then(base => setTimeout(() => {
+        self.base = base;
+        self.array = new Array();
+
+        let count, uuid, value;
+
+        count = (65536 * 1);//000;
+        while (count--) {
+            uuid = turboUUID();
+            array.push(uuid);
+            base.push(uuid);
+        }
+
+        console.table({
+            first5: array.slice(0, 5),
+            last5: array.slice(array.length - 5),
+            arrayLength: [array.length],
+            baseCount: [base.count()]
+        });
+        console.log("ready..")
+
+        new BroadcastChannel("uuid").onmessage = e => {
+            const uuid = e.data;
+            const test = new Array(10).fill();
+            console.warn(uuid);
+
+            let eSum = 0;
+
+            console.table(
+                test.map((u, i) => {
+                    const t0 = performance.now();
+                    const vm = array.indexOf(uuid);
+                    const tm = performance.now() - t0;
+
+                    const t1 = performance.now();
+                    const vb = base.indexOf(uuid);
+                    const tb = performance.now() - t1;
+
+                    if (vm !== vb) throw `Indexed are different ${uuid} array[${vm}] !== base[${vb}]`;
+
+                    const efficiency = tm / tb;
+                    eSum += efficiency;
+
+                    return {
+                        index: vm,
+                        tArray: tm,
+                        tBase: tb,
+                        efficiency: efficiency
+                    };
+                })
+            );
+
+            console.warn({
+                sampleCount: test.length,
+                indexDistance: (array.indexOf(uuid) / array.length).toFixed(2) * 1,
+                efficiency: (eSum / test.length)
+            });
+
+        }
+
+        console.log("testing with [ self.test(i?) ]..")
+        self.test = i => {
+            const script = `close(new BroadcastChannel("uuid").postMessage(name))`;
+            new Worker(URL.createObjectURL(new Blob([script])), {
+                name: array.at(i || (Math.random() * array.length))
+            })
+        };
+
+        setTimeout(() => test(-2), 1000)
+    }, 1000))
+</script>

@@ -1,0 +1,1 @@
+cd src && wat4wasm --input=uuid.wat --output=../uuid.wasm --untouched-window --wat2wasm=wat2wasm --enable-threads --keep-unused-functions --enable-multi-memory

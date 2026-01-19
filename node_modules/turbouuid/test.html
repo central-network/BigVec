@@ -1,0 +1,40 @@
+<script type="module">
+    import "./index.js"
+
+    turboUUID.base().then(base => {
+        console.warn(self.base = base)
+
+        self.array = new Array();
+        let count, uuid, value;
+
+        count = 32768000;
+        while (count--) {
+            uuid = base.randomUUID();;
+            array.push(uuid);
+        }
+
+        console.log({ array })
+
+        console.log("ready")
+        new BroadcastChannel("uuid").onmessage = e => {
+            const uuid = e.data;
+            console.warn(uuid)
+
+            const t0 = performance.now();
+            const vm = array.indexOf(uuid);
+            const tm = performance.now() - t0;
+
+            const t1 = performance.now();
+            const vb = base.indexOf(uuid);
+            const tb = performance.now() - t1;
+
+            console.warn({ array: tm, vm, base: tb, vb })
+
+            performance.clearMarks();
+            performance.clearMeasures();
+            performance.clearResourceTimings();
+        }
+
+
+    })
+</script>
