@@ -19,6 +19,8 @@
   },
   "dependencies": {
     "localsharedmemory": "^1.1.1",
-    "turbouuid": "^0.0.6"
+    "turbouuid": "^0.0.6",
+    "wat4beauty": "^1.0.3",
+    "wat4wasm": "^1.1.5"
   }
 }

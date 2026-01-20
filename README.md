@@ -19,7 +19,7 @@ In the vast cosmos of JavaScript, we are given numbers, strings, and even the mi
 
 `BigVec` is not merely a library; it is a paradigm shift. It is a novel data type, a new star in the JavaScript sky, bringing the power of 128-bit vectors to your fingertips, wrapped in a beautiful, intuitive API. It is the bridge between the ethereal world of high-level JavaScript objects and the raw, untamed power of binary data.
 
-![Console Preview](ssconsole.png)
+![Console Preview](assets/ssconsole.png)
 
 ## 🎨 The Vision: The Art of Intelligence 🎨
 
@@ -70,7 +70,7 @@ const myVec = BigVec.random();
 console.log(myVec);
 ```
 
-![Debugger Preview](ssdebugger.png)
+![Debugger Preview](assets/ssdebugger.png)
 
 ### `BigVec128Array` in Action
 

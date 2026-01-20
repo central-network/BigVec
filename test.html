@@ -7,24 +7,32 @@
     const arr = new BigVec128Array(3).random();
     console.log(arr);
 
-    turboUUID.base().then(base => setTimeout(() => {
-        self.base = base;
+    const wasm = fetch("wasm/base.wasm");
+    turboUUID.base(wasm).then(idb => setTimeout(() => {
+        self.idb = idb;
+        console.warn(idb)
+        return;
+        self.jmap = new Map();
         self.array = new Array();
 
-        let count, uuid, value;
+        let count, uuid, item, items = Reflect.ownKeys(self);
 
         count = (65536 * 1);//000;
         while (count--) {
             uuid = turboUUID();
+            item = items.at(count % items.length);
+
             array.push(uuid);
-            base.push(uuid);
+
+            jmap.set(uuid, item);
+            base.set(uuid, item);
         }
 
         console.table({
             first5: array.slice(0, 5),
             last5: array.slice(array.length - 5),
-            arrayLength: [array.length],
-            baseCount: [base.count()]
+            jmapSize: [jmap.size],
+            baseSize: [base.size()]
         });
         console.log("ready..")
 
@@ -38,11 +46,11 @@
             console.table(
                 test.map((u, i) => {
                     const t0 = performance.now();
-                    const vm = array.indexOf(uuid);
+                    const vm = jmap.get(uuid);
                     const tm = performance.now() - t0;
 
                     const t1 = performance.now();
-                    const vb = base.indexOf(uuid);
+                    const vb = base.get(uuid);
                     const tb = performance.now() - t1;
 
                     if (vm !== vb) throw `Indexed are different ${uuid} array[${vm}] !== base[${vb}]`;
@@ -52,7 +60,7 @@
 
                     return {
                         index: vm,
-                        tArray: tm,
+                        tJMap: tm,
                         tBase: tb,
                         efficiency: efficiency
                     };

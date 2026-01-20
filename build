@@ -1,1 +1,8 @@
-cd src && wat4wasm --input=uuid.wat --output=../uuid.wasm --untouched-window --wat2wasm=wat2wasm --keep-unused-functions --apply=apply.js --debug-names
+cd src
+#wat4wasm --input=idb.wat --output=idb.wasm --wat2wasm=wat2wasm --keep-unused-functions --apply=apply.js --debug-names
+#mv idb.wasm ../wasm/idb.wasm
+#wat4wasm --input=uuid.wat --output=uuid.wasm --wat2wasm=wat2wasm --keep-unused-functions --apply=apply.js --debug-names
+#mv uuid.wasm ../wasm/uuid.wasm
+
+wat4wasm --input=base.wat --output=base.wasm --wat2wasm=wat2wasm --keep-unused-functions --apply=apply.js --debug-names
+mv base.wasm ../wasm/base.wasm

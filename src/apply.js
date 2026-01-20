@@ -1,4 +1,4 @@
-const page = 160;
+const page = 16;
 const memories = {
     i8x16a: (page / 16) * 65536,
     i8x16b: (page / 16) * 65536,
@@ -19,6 +19,7 @@ const offsets = {
 export default function align(wat) {
 
     wat = wat.replaceAll(`{{PAGE_COUNT}}`, page);
+    wat = wat.replaceAll(`{{ITEM_COUNT}}`, page * (65536 / 16));
 
     Array.from(wat.matchAll(/\smemory\=(.[^\s]*)\s+offset\=(\d+)\s/g)).sort((a, b) => b[0].length - a[0].length).forEach(([keyword, label, offset = 0]) => {
         const start = (+offset + offsets[label]).toString(16).padStart(8, 0);;
