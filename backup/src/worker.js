@@ -1,0 +1,1 @@
+onmessage = e => Object.assign(self, e.data).WebAssembly.instantiate(worker, self)

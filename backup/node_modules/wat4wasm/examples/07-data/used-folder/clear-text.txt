@@ -1,0 +1,1 @@
+clear text (or any other kind) file content will be read and stored in data segment as hex
