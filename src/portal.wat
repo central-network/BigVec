@@ -1,6 +1,9 @@
 (module
     (table $module 1 65536 externref)
     (table $process 1 65536 externref)
+    (table $hanlders 1 65536 externref)
+
+    (data $idb "file://../wasm/idb.wasm")
 
     (export "instantiate" (func $instantiate))
     (export "compile" (func $compile))
@@ -10,14 +13,18 @@
     (export "module" (table $module))
     (export "process" (table $process))
     (export "memory" (global $memory))
+    (export "boot" (func $boot))
+    (export "idb" (global $idb))
 
+    (global $idb mut ext)
     (global $memory mut ext)
 
     (global $PAGESIZE_INITIAL i32 i32(1))
     (global $PAGESIZE_MAXIMUM i32 i32(65536))
     (global $MEMORY_IS_SHARED i32 (true))
 
-    (main $prepare 
+    (func $boot 
+        (result                 <Promise>)
         (local $descriptor       <Object>)
         (local $memory           <Memory>)
         (local $buffer      <ArrayBuffer>)
@@ -92,13 +99,57 @@
             )        
         )
 
+        (global.set $memory 
+            (local.get $memory)
+        )
+
         (reflect $set<ext.ext.ext> 
             (self) 
             (text "memory") 
             (local.get $memory)
         )
 
-        (global.set $memory (local.get $memory))
+        (async.ext
+            (call $instantiate (data.view $idb))
+            (then $oninstanced
+                (param $instantiate <Object>)
+                (result            <Promise>)
+
+                (global.set $idb 
+                    (call $exports (this))
+                )
+                
+                (reflect $apply<ext.ext.ext>ext 
+                    (reflect $get<ext.ext>ext 
+                        (global.get $idb) 
+                        (text "open")
+                    )
+                    (null)
+                    (array $of<ext.ext>ext 
+                        (text "portal") 
+                        (text "module")
+                    )
+                )
+            )
+            (then $onidbopen
+                (result <Promise>)
+
+                (reflect $apply<ext.ext.ext>ext 
+                    (reflect $get<ext.ext>ext 
+                        (global.get $idb) 
+                        (text "count")
+                    )
+                    (null)
+                    (array)
+                )
+            )
+            (then $onidbcount
+                (param $count            i32)
+                (console $log<i32> (this))
+                (table.grow $module (null) (this))
+                (drop)
+            )
+        )
     )
 
     (func $start
@@ -108,7 +159,11 @@
 
         (local.set $pid 
             (table.grow $process 
-                (call $resolve (table.get $module (local.get $app)))
+                (call $resolve 
+                    (table.get $module 
+                        (local.get $app)
+                    )
+                )
                 (true)
             )
         )
@@ -161,44 +216,69 @@
         (local.get $pid)
     )
 
+    (func $exports
+        (param $result           <Instance|Object>)
+        (result                           <Object>)
+
+        (if (reflect $has<ext.ext>i32 (this) (text "instance"))
+            (then (local.set 0 (reflect $get<ext.ext>ext (this) (text "instance"))))
+        )
+
+        (if (reflect $has<ext.ext>i32 (this) (text "exports"))
+            (then (return (reflect $get<ext.ext>ext (this) (text "exports"))))
+        )
+
+        (object)
+    )
+
     (func $install
         (param $url                       <String>)
         (result                                i32)
         (local $index                          i32)
+        (local $fetch                    <Request>)
+
+        (local.set $fetch
+            (call $fetch (local.get $url))
+        )
         
         (local.set $index 
-            (table.grow $module 
-                (call $fetch (local.get $url)) 
+            (table.grow $module
+                (local.get $fetch) 
                 (true)
             )
         )
 
         (async 
             (array $fromAsync<ext>ext
-                (array $of<ext.i32>ext
-                    (table.get $module (local.get $index))
+                (array $of<i32.ext>ext
                     (local.get $index)
+                    (local.get $fetch)
                 )
             )
             (then $onbuffer
                 (param $items              <Array>)
                 (result                  <Promise>)
-                (local $source       <ArrayBuffer>)
-                (local $compilation      <Promise>)
-                (local $index                  i32)
-
-                (local.set $source (reflect $get<ext.i32>ext (this) i32(0)))
-                (local.set $index (reflect $get<ext.i32>i32 (this) i32(1)))
-
-                (table.set $module 
-                    (local.get $index)
-                    (call $compile (local.get $source))
-                )
 
                 (reflect $set<ext.i32.ext> 
-                    (local.get $items) 
-                    (i32.const 0) 
-                    (table.get $module (local.get $index))
+                    (this)
+                    (i32.const 2)
+                    (reflect $apply<ext.ext.ext>ext 
+                        (reflect $get<ext.ext>ext (global.get $idb) (text "set"))
+                        (null)
+                        (local.get $items)
+                    )
+                )
+
+                (array $fromAsync<ext>ext (this))
+            )
+            (then $onpersist
+                (param $items              <Array>)
+                (result                  <Promise>)
+
+                (reflect $set<ext.i32.ext> 
+                    (this)
+                    (i32.const 1)
+                    (call $compile (reflect $get<ext.i32>ext (this) i32(1)))
                 )
 
                 (array $fromAsync<ext>ext (this))
@@ -208,9 +288,9 @@
                 (local $module           <Module>)
                 (local $index                 i32)
 
-                (local.set $module (reflect $get<ext.i32>ext (this) i32(0)))
-                (local.set $index (reflect $get<ext.i32>i32 (this) i32(1)))
-                
+                (local.set $index (reflect $get<ext.i32>i32 (this) i32(0)))
+                (local.set $module (reflect $get<ext.i32>ext (this) i32(1)))
+
                 (table.set $module 
                     (local.get $index) 
                     (local.get $module)

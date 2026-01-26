@@ -1,5 +1,5 @@
 cd src
-#wat4wasm --input=idb.wat --output=../wasm/idb.wasm --wat2wasm=wat2wasm --keep-unused-functions --apply=../assets/apply_replace.js --debug-names --enable-threads
+#wat4wasm --input=idb.wat --output=../wasm/idb.wasm --wat2wasm=wat2wasm --keep-unused-functions --debug-names --enable-threads
 #wat4wasm --input=uuid.wat --output=../wasm/uuid.wasm --wat2wasm=wat2wasm --keep-unused-functions --apply=../assets/apply_replace.js --debug-names --enable-threads
 #wat4wasm --input=window.wat --output=../wasm/window.wasm --wat2wasm=wat2wasm --keep-unused-functions --apply=../assets/replace_wat.js --debug-names --enable-threads
 wat4wasm --input=portal.wat --output=../wasm/portal.wasm --wat2wasm=wat2wasm --keep-unused-functions --apply=../assets/replace_wat.js --debug-names --enable-threads

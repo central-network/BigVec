@@ -7,10 +7,13 @@
     WebAssembly.instantiateStreaming(fetch("wasm/portal.wasm"), self).then(i => {
         console.warn(i.instance.exports)
         const portal = i.instance.exports;
-        const app = portal.install("wasm/window.wasm");
-        const process = portal.start(app)
 
-        console.log({app, process})
+        portal.boot().then(() => {
+            const app = portal.install("wasm/window.wasm");
+            const process = portal.start(app)
+    
+            console.log({app, process})
+        })
     });
 
     (async () => {
