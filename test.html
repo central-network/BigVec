@@ -4,19 +4,22 @@
     import LocalSharedMemory from "./node_modules/localsharedmemory/index.js"
 
     //self.memory = new LocalSharedMemory(1, 65536, true);
-    WebAssembly.instantiateStreaming(fetch("wasm/portal.wasm"), self).then(i => {
-        console.warn(i.instance.exports)
-        const portal = i.instance.exports;
 
-        portal.boot().then(() => {
-            const app = portal.install("wasm/window.wasm");
-            const process = portal.start(app)
+    WebAssembly.instantiateStreaming(fetch("wasm/console.wasm"), self);
     
-            console.log({app, process})
-        })
-    });
-
     (async () => {
+        WebAssembly.instantiateStreaming(fetch("wasm/portal.wasm"), self).then(i => {
+            console.warn(i)
+            const portal = i.instance.exports;
+    
+            portal.boot().then(() => {
+                const app = portal.install("wasm/window.wasm");
+                const process = portal.start(app)
+        
+                console.log({app, process})
+            })
+        });
+
         console.log(BigVec.fromUUID('f81d4fae-7dec-11d0-a765-00a0c91e6bf6'));
 
         const arr = new BigVec128Array(3).random();
