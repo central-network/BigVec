@@ -119,6 +119,20 @@
         (error (this))    
     )
 
+    (func $dispatch_cmd
+        (param $offset             i32)
+
+        (console $warn<ext.ext> 
+            (reflect $apply<ext.ext.ext>ext
+                (call $get_handler (this))
+                (null)
+                (global.get $values)
+            )
+            (global.get $values)
+        )
+    )
+
+
     (func $handle_request
         (param $offset             i32)
         (param $handler     <Function>)
@@ -143,12 +157,10 @@
             (ref.extern $setTimeout)
             (null)
             (array $of<ext>ext
-                (reflect $apply<ext.ext.ext>ext
+                (reflect $apply<ext.fun.ext>ext
                     (ref.extern $Function:bind)
-                    (call $get_handler (this))
-                    (array $of<ext.ext>ext 
-                        (null) (global.get $values)
-                    )
+                    (ref.func $dispatch_cmd)
+                    (array $of<ext.i32>ext (null) (this))
                 )
             )
         )
@@ -276,9 +288,19 @@
         )
 
         (console $log<ext.ext> (text "handle_argument parameter:") (this))
-        (console $log<ext.i32> (text "handle_argument cmd_offset:") (local.get $cmd_offset))
         (console $log<ext.ext> (text "handle_argument values:") (local.get $values))
         (console $log<ext.ext> (text "global values:") (global.get $values))
+
+        (reflect $apply<ext.fun.ext>ext
+                (ref.extern $Function:bind)
+                (ref.func $handle_argument)
+                (array $of<ext.ext.i32>ext 
+                    (null) 
+                    (local.get $parameter) 
+                    (local.get $cmd_offset)
+                )
+            )
+            (return)
 
         (object $defineProperty<ext.ext.ext>ext
             (reflect $apply<ext.fun.ext>ext
