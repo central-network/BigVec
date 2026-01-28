@@ -3,15 +3,15 @@ const definers = {};
 const cleaners = {};
 const handlers = {};
 
-const global_param_values = [];
+const values = [];
 
 const bounded_param_reset = Reflect.apply(
     Function.prototype.bind,
     Reflect.set,
-    Array.of(null, global_param_values, "length", 0)
+    Array.of(null, values, "length", 0)
 );
 
-const bounded_window_delete = Reflect.apply(
+const bounded_param_clean = Reflect.apply(
     Function.prototype.bind,
     Reflect.deleteProperty,
     Array.of(null, self)
@@ -34,7 +34,7 @@ const proxy = new Proxy(function (){}, {
     apply: function(target, thisArg, args) {
 		Reflect.apply(
             Array.prototype.push, 
-            global_param_values, 
+            values, 
             Reflect.apply(
                 Array.prototype.flat,
                 args,
@@ -56,7 +56,7 @@ const proxy = new Proxy(function (){}, {
 		
         Reflect.apply(
             Array.prototype.push, 
-            global_param_values, 
+            values, 
             Array.of(prop)
         );
 
@@ -68,7 +68,7 @@ const parameter_trap = function (name) {
 
     Reflect.apply(
         Array.prototype.push, 
-        global_param_values, 
+        values, 
         Array.of(
             Reflect.apply(
                 String.prototype.concat,
@@ -112,7 +112,7 @@ function defineShellCommand(command, handler) {
     const queue_bounded_dispatch = Reflect.apply(
         Function.prototype.bind,
         handler,
-        Array.of(null, global_param_values)
+        Array.of(null, values)
     );
     
     const delayed_command_handle = Reflect.apply(
@@ -167,7 +167,7 @@ function defineCommandParameter(command, parameter) {
         Array.prototype.forEach,
         Array.of(
             command_all_parameters, 
-            bounded_window_delete
+            bounded_param_clean
         )
     );
 
