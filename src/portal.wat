@@ -1,154 +1,44 @@
-(module
+(module 
     (table $module 1 65536 externref)
     (table $process 1 65536 externref)
-    (table $hanlders 1 65536 externref)
 
     (data $idb "file://../wasm/idb.wasm")
-    (data $MODULE_NAME "portal")
-
-    (export "instantiate"  (func $instantiate))
-    (export "compile"      (func $compile))
-    (export "fetch"        (func $fetch))
-    (export "install"      (func $install))
-    (export "start"        (func $start))
-    (export "boot"         (func $boot))
-    (export "module"       (table $module))
-    (export "process"      (table $process))
-    (export "memory"       (global $memory))
-    (export "idb"          (global $idb))
+    (data $console "file://../wasm/console.wasm")
+    (data $import "wasm://import.wat")
 
     (global $idb mut ext)
-    (global $memory mut ext)
 
-    (global $PAGESIZE_INITIAL i32 i32(1))
-    (global $PAGESIZE_MAXIMUM i32 i32(65536))
-    (global $MEMORY_IS_SHARED i32 (true))
+    (global $imports mut ext)
+    (global $exports mut ext)
 
-    (func $boot 
-        (result                 <Promise>)
-        (local $descriptor       <Object>)
-        (local $memory           <Memory>)
-        (local $buffer      <ArrayBuffer>)
-        (local $dataView       <DataView>)
-        (local $uInt8Array   <Uint8Array>)
-        (local $int32Array   <Int32Array>)
-
-        (local.set $descriptor
-            (object $fromEntries<ext>ext
-                (array $of<ext.ext.ext>ext
-                    (array $of<ext.i32>ext (text "initial") (global.get $PAGESIZE_INITIAL))
-                    (array $of<ext.i32>ext (text "maximum") (global.get $PAGESIZE_MAXIMUM))
-                    (array $of<ext.i32>ext (text "shared")  (global.get $MEMORY_IS_SHARED))
-                )
-            )
-        )
-
-        (local.set $memory
-            (reflect $construct<ext.ext>ext 
-                (ref.extern $WebAssembly.Memory) 
-                (array $of<ext>ext (local.get $descriptor))
-            )
-        )
-        
-        (local.set $buffer
-            (reflect $apply<ext.ext.ext>ext
-                (ref.extern $WebAssembly.Memory:buffer[get])
-                (local.get $memory)
-                (array)
-            )
-        )
-
-        (local.set $dataView
-            (reflect $construct<ext.ext>ext
-                (ref.extern $DataView)
-                (array $of<ext>ext (local.get $buffer))
-            )
-        )
-
-        (reflect $apply<ext.ext.ext>
-            (ref.extern $DataView:setUint8)
-            (local.get $dataView)
-            (array $of<i32.i32>ext i32(4) i32(8))
-        )
-
-        (local.set $uInt8Array
-            (reflect $construct<ext.ext>ext
-                (ref.extern $Uint8Array)
-                (array $of<ext>ext (local.get $buffer))
-            )
-        )
-
-        (local.set $int32Array
-            (reflect $construct<ext.ext>ext
-                (ref.extern $Int32Array)
-                (array $of<ext>ext (local.get $buffer))
-            )
-        )
-
-        (object $assign<ext.ext> 
-            (local.get $memory)
-            (object $fromEntries<ext>ext
-                (array $of<ext.ext.ext.ext.ext.ext.ext>ext
-                    (array $of<ext.ext>ext (text "dataview") (local.get $dataView))
-                    (array $of<ext.ext>ext (text "uint8array") (local.get $uInt8Array))
-                    (array $of<ext.ext>ext (text "int32array") (local.get $int32Array))
-                    (array $of<ext.i32>ext (text "pagesize_initial") (global.get $PAGESIZE_INITIAL))
-                    (array $of<ext.i32>ext (text "pagesize_maximum") (global.get $PAGESIZE_MAXIMUM))
-                    (array $of<ext.i32>ext (text "buffer_length_initial") (i32.mul (global.get $PAGESIZE_INITIAL) i32(65536)))
-                    (array $of<ext.i32>ext (text "buffer_length_maximum") (i32.mul (global.get $PAGESIZE_MAXIMUM) i32(65536)))
-                )
-            )        
-        )
-
-        (global.set $memory 
-            (local.get $memory)
-        )
-
-        (reflect $set<ext.ext.ext> 
-            (self) 
-            (text "memory") 
-            (local.get $memory)
-        )
-
-        (async.ext
-            (call $instantiate (data.view $idb))
-            (then $oninstanced
-                (param $instantiate <Object>)
-                (result            <Promise>)
-
-                (global.set $idb 
-                    (call $exports (this))
-                )
+    (main $portal
+        (async 
+            (wasm.instantiate (data.view $import) (self))
+            (then $oninstance
+                (param $instance    <Object|Instance>)
+                (result                     <Promise>)
                 
-                (reflect $apply<ext.ext.ext>ext 
-                    (reflect $get<ext.ext>ext 
-                        (global.get $idb) 
-                        (text "open")
-                    )
-                    (null)
-                    (array $of<ext.ext>ext 
-                        (text "portal") 
-                        (text "module")
-                    )
-                )
-            )
-            (then $onidbopen
-                (result <Promise>)
+                (global.set $exports (wasm.exports (local.get $instance)))
+                (global.set $imports (wasm.imports (global.get $exports)))
 
-                (reflect $apply<ext.ext.ext>ext 
-                    (reflect $get<ext.ext>ext 
-                        (global.get $idb) 
-                        (text "count")
-                    )
-                    (null)
-                    (array)
-                )
+                (wasm.compile (data.view $console))
             )
-            (then $onidbcount
-                (param $count            i32)
-                (console $log<i32> (this))
-                (table.grow $module (null) (this))
-                (drop)
+            (then $onmodule
+                (param $module               <Module>)
+                (result                     <Promise>)
+
+                (wasm.instantiate (this) (global.get $imports))
+            )
+            (then $oninstance
+                (param $instance           <Instance>)
+                (result                     <Promise>)
+
+                (wasm.start (this) (global.get $exports))
+            )
+            (then $onappstart
+                (param $handlers             <Object>)
+                
+                (console $warn<ext.ext> (text "app started") (this))
             )
         )
     )
@@ -215,21 +105,6 @@
         )
 
         (local.get $pid)
-    )
-
-    (func $exports
-        (param $result           <Instance|Object>)
-        (result                           <Object>)
-
-        (if (reflect $has<ext.ext>i32 (this) (text "instance"))
-            (then (local.set 0 (reflect $get<ext.ext>ext (this) (text "instance"))))
-        )
-
-        (if (reflect $has<ext.ext>i32 (this) (text "exports"))
-            (then (return (reflect $get<ext.ext>ext (this) (text "exports"))))
-        )
-
-        (object)
     )
 
     (func $install

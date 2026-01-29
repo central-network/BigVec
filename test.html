@@ -5,7 +5,7 @@
 
     //self.memory = new LocalSharedMemory(1, 65536, true);
 
-    WebAssembly.instantiateStreaming(fetch("wasm/console.wasm"), self);
+    WebAssembly.instantiateStreaming(fetch("wasm/portal.wasm"), self).then(i => console.log(i.instance));
     
     (async () => {
         WebAssembly.instantiateStreaming(fetch("wasm/portal.wasm"), self).then(i => {

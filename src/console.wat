@@ -1,42 +1,36 @@
 (module
-    (table $command 1 65536 externref)
+    (table $item 4 65536 externref)
+    
+    (import "self" "memory" (memory $memory 1 65536 shared))
+    (import "self" "funcref"  (table $funcref 1 65536 funcref))
+    (import "self" "externref" (table $externref 1 65536 externref))
 
-    (global $proxy mut ext)
-    (global $values mut ext)
+    (func $start
+        (export           "start")
+        (param $exports  <Object>)
+        (result         <Promise>)
 
-    (func $demo
-        (local $cmd_index i32)
-
-        (local.set $cmd_index
-            (call $register_command 
-                (text "whoami") 
-                (call $self.Object<fun>ext (ref.func $whoami))
+        (reflect $apply<ext.ext.ext>ext
+            (ref.extern $Promise.resolve)
+            (ref.extern $Promise)
+            (array $of<ext>ext 
+                (object $assign<ext.ext>ext
+                    (call $self.Object<ext>ext (this))
+                    (table.get $item i32(2))
+                )
             )
         )
-
-        (call $define_parameter (local.get $cmd_index) (text "name") (text "n"))
-        (call $define_parameter (local.get $cmd_index) (text "force") (null))
-        (call $define_parameter (local.get $cmd_index) (text "p") (null))
-        (call $define_parameter (local.get $cmd_index) (text "list") (text "l"))
-
-
-        (local.set $cmd_index
-            (call $register_command 
-                (text "ping") 
-                (call $self.Object<fun>ext (ref.func $ping))
-            )
-        )
-
-        (call $define_parameter (local.get $cmd_index) (text "time") (text "t"))
     )
 
     (main $console
-        (local $cmd_index i32)
-        
-        (global.set $proxy (call $new_proxy))
-        (global.set $values (array))
+        (table.set $item i32(0) (; $proxy ;) (call $new_proxy))
+        (table.set $item i32(1) (; $values ;) (array))
+        (table.set $item i32(2) (; $exports ;) (object))
+        (table.set $item i32(3) (; $commands ;) (object))
 
-        (call $demo)
+        (reflect $set<ext.ext.fun> (table.get $item i32(2)) (text "register") (ref.func $register_command))
+        (reflect $set<ext.ext.fun> (table.get $item i32(2)) (text "unregister") (ref.func $unregister_command))
+        (reflect $set<ext.ext.fun> (table.get $item i32(2)) (text "define_parameter") (ref.func $define_parameter))
     )
 
     (func $isToPrimitive 
@@ -89,18 +83,20 @@
 
         (reflect $apply<ext.ext.ext>
             (ref.extern $Array:push)
-            (global.get $values)
+            (table.get $item i32(1))
             (local.get $arguments)
         )
 
-        (global.get $proxy)
+        (table.get $item i32(0))
     )
 
     (func $reset 
-        (local $ownKeys                <Array>)
+        (local $ownKeys <Array>)
 
         (local.set $ownKeys
-            (reflect $ownKeys<ext>ext (global.get $values))
+            (reflect $ownKeys<ext>ext 
+                (table.get $item i32(1))
+            )
         )
 
         (reflect $apply<ext.ext.ext>
@@ -112,14 +108,14 @@
                     (ref.extern $Reflect.deleteProperty)
                     (array $of<ext.ext>ext 
                         (null) 
-                        (global.get $values)
+                        (table.get $item i32(1))
                     )
                 )
             )
         )
 
         (reflect $set<ext.ext.i32> 
-            (global.get $values) 
+            (table.get $item i32(1)) 
             (text "length") 
             (i32.const 0)
         )
@@ -138,32 +134,39 @@
             (then 
                 (reflect $apply<ext.ext.ext>
                     (ref.extern $Array:push) 
-                    (global.get $values) 
+                    (table.get $item i32(1)) 
                     (array $of<i32>ext (call $toNumber (local.get $prop)))
                 )
             )
             (else 
                 (reflect $apply<ext.ext.ext>
                     (ref.extern $Array:push) 
-                    (global.get $values) 
+                    (table.get $item i32(1)) 
                     (array $of<ext>ext (local.get $prop))
                 )
             )
         )
 
-        (global.get $proxy)
+        (table.get $item i32(0))
     )
+
+    (func $void)
 
     (func $new_proxy
         (result                       <Proxy>)
         (local $function           <Function>)
         (local $descriptor           <Object>)
 
-        (local.set $function (void))
+        (local.set $function (call $self.Object<fun>ext (ref.func $void)))
         (local.set $descriptor (object))
 
         (reflect $set<ext.ext.fun> (local.get $descriptor) (text "apply") (ref.func $apply_trap))
         (reflect $set<ext.ext.fun> (local.get $descriptor) (text "get") (ref.func $get_trap))
+
+        (reflect $deleteProperty<ext.ext> (this) (text "name"))
+        (reflect $deleteProperty<ext.ext> (this) (text "length"))
+        (reflect $deleteProperty<ext.ext> (reflect $getPrototypeOf<ext>ext (this)) (text "arguments"))
+        (reflect $deleteProperty<ext.ext> (reflect $getPrototypeOf<ext>ext (this)) (text "caller"))
         
         (reflect $construct<ext.ext>ext
             (ref.extern $Proxy)
@@ -191,15 +194,15 @@
     )
 
     (func $handle_request
-        (param $index            i32)
-        (result              <Proxy>)
+        (param $index i32)
+        (result     <NaN>)
         (call $reset)
 
-        (reflect $apply<ext.ext.ext> (table.get $command (i32.add i32(1) (this))) (null) (self))
-        (reflect $apply<ext.ext.ext> (table.get $command (i32.add i32(2) (this))) (null) (self))
-        (reflect $apply<ext.ext.ext> (table.get $command (i32.add i32(3) (this))) (null) (self))
+        (reflect $apply<ext.ext.ext> (table.get $item (i32.add i32(1) (this))) (null) (self))
+        (reflect $apply<ext.ext.ext> (table.get $item (i32.add i32(2) (this))) (null) (self))
+        (reflect $apply<ext.ext.ext> (table.get $item (i32.add i32(3) (this))) (null) (self))
 
-        (global.get $proxy)
+        (NaN)
     )
 
     (func $create_getter_descriptor
@@ -219,7 +222,7 @@
 
         (reflect $apply<ext.ext.ext>
             (ref.extern $Array:push) 
-            (global.get $values) 
+            (table.get $item i32(1)) 
             (array $of<ext>ext
                 (reflect $apply<ext.ext.ext>ext
                     (ref.extern $String:concat)
@@ -229,20 +232,33 @@
             )
         )
 
-	    (global.get $proxy) 
+	    (table.get $item i32(0)) 
+    )
+
+    (func $unregister_command
+        (param $command <String>)
+        (reflect $deleteProperty<ext.ext> (self) (local.get $command))
+        (reflect $deleteProperty<ext.ext> (table.get $item i32(3)) (local.get $command))
     )
 
     (func $register_command
         (param $command     <String>)
         (param $handler   <Function>)
-        (result                  i32)
+        (param $parameters   <Array>)
         (local $index            i32)
 
         (local $command_bounded_getter <Function>)
         (local $queue_bounded_dispatch <Function>)
         (local $delayed_command_handle <Function>)
 
-        (local.set $index (table.grow $command (null) i32(4)))
+        (local.set $index (table.add $item (null) i32(4)))
+
+        (reflect $set<ext.ext.i32> 
+            (table.get $item i32(3)) 
+            (local.get $command) 
+            (local.get $index)
+        )
+        
         (local.set $command_bounded_getter 
             (reflect $apply<ext.fun.ext>ext
                 (ref.extern $Function:bind)
@@ -255,7 +271,7 @@
             (reflect $apply<ext.ext.ext>ext
                 (ref.extern $Function:bind)
                 (local.get $handler)
-                (array $of<ext.ext>ext (null) (global.get $values))
+                (array $of<ext.ext>ext (null) (table.get $item i32(1)))
             )
         )
 
@@ -273,29 +289,52 @@
             (call $create_getter_descriptor (local.get $command_bounded_getter))
         )
 
+        (table.set $item (i32.add i32(0) (local.get $index)) (object))
+        (table.set $item (i32.add i32(1) (local.get $index)) (void))
+        (table.set $item (i32.add i32(2) (local.get $index)) (local.get $delayed_command_handle))
+        (table.set $item (i32.add i32(3) (local.get $index)) (void))
 
-        (table.set $command (i32.add i32(0) (local.get $index)) (object))
-        (table.set $command (i32.add i32(1) (local.get $index)) (void))
-        (table.set $command (i32.add i32(2) (local.get $index)) (local.get $delayed_command_handle))
-        (table.set $command (i32.add i32(3) (local.get $index)) (void))
-
-        (local.get $index)
+        (if (bool (local.get $parameters))
+            (then
+                (reflect $apply<ext.ext.ext>
+                    (ref.extern $Array:forEach)
+                    (local.get $parameters)
+                    (array $of<ext>ext
+                        (reflect $apply<ext.fun.ext>ext
+                            (ref.extern $Function:bind)
+                            (ref.func $define_parameter)
+                            (array $of<ext.ext>ext 
+                                (null) (local.get $command)
+                            )
+                        )
+                    )
+                )
+            )
+        )
     )
 
     (func $define_parameter
-        (param $index                            i32)
+        (param $command                     <String>)
         (param $parameter                   <String>)
         (param $alternative                 <String>)
 
+        (local $index                            i32)
         (local $command_descriptors         <Object>)
         (local $arguments_getter_bound    <Function>)
         (local $command_all_parameters       <Array>)
         (local $bound_for_define_param    <Function>)
         (local $bound_for_remove_param    <Function>)
         (local $delayed_remove_binding    <Function>)
+        
+        (local.set $index
+            (reflect $get<ext.ext>i32 
+                (table.get $item i32(3)) 
+                (local.get $command)
+            )
+        )
 
         (local.set $command_descriptors 
-            (table.get $command (this))
+            (table.get $item (local.get $index))
         )
 
         (local.set $arguments_getter_bound 
@@ -312,7 +351,10 @@
             (call $create_getter_descriptor (local.get $arguments_getter_bound)) 
         )
 
-        (if (i32.eqz (ref.is_null (local.get $alternative)))
+        (if (i32.and
+                (bool (local.get $alternative))
+                (isNaN (local.get $alternative))
+            )
             (then
                 (reflect $set<ext.ext.ext>
                     (local.get $command_descriptors) 
@@ -366,7 +408,7 @@
             )
         ) 
 
-        (table.set $command (i32.add i32(1) (this)) (local.get $bound_for_define_param))
-        (table.set $command (i32.add i32(3) (this)) (local.get $delayed_remove_binding))
+        (table.set $item (i32.add i32(1) (local.get $index)) (local.get $bound_for_define_param))
+        (table.set $item (i32.add i32(3) (local.get $index)) (local.get $delayed_remove_binding))
     )
 )
