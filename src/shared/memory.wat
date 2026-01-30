@@ -1,5 +1,5 @@
     
-    (import "shared_memory" "memory" (memory $shared 1 65536 shared))
+    (import "wasm" "#memory" (memory $memory 1 65536 shared))
     
     (func $malloc
         (param $length  i32)

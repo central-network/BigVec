@@ -1,20 +1,13 @@
 (module
+    (include "shared/imports.wat")
+    (include "call_indirect/idb.wat")
+    (include "call_indirect/console.wat")
+
     (memory $base {{PAGE_COUNT}})
-    (table $ref 0 {{ITEM_COUNT}} externref)
 
     (global $MAX_COUNT   mut i32)
     (global $UUID_COUNT  mut i32)
     (global $BLOCK_COUNT mut i32)
-
-    (export "memory"      (memory $base))
-    (export "get"         (func $get))
-    (export "indexOf"     (func $indexOf))
-    (export "has"         (func $has))
-    (export "size"        (func $size))
-    (export "forEach"     (func $forEach))
-    (export "push"        (func $push))
-    (export "set"         (func $set))
-    (export "key"         (func $key))
 
     (global $ARGUMENTS_REGEXP_CLEAR_STR mut ext)
     (global $ARGUMENTS_REGEXP_MATCH_HEX mut ext)
@@ -23,18 +16,95 @@
 
     (main $init
         (local $offset i32)
+
         (memory.size)
         (i32.mul (i32.const 65536))
         (i32.div_u (i32.const 16))
         (global.set $MAX_COUNT)
+        (global.set $BLOCK_COUNT i32(1))
 
         (global.set $ARGUMENTS_REGEXP_CLEAR_STR (call $regexp_args_array (text "[^a-f0-9]") (string)))
         (global.set $ARGUMENTS_REGEXP_MATCH_HEX (call $regexp_args_array (text "(..)") (string)))
 
         (global.set $stride (call $calc_stride (memory.size)))
+
+        (wasm.export (ref.module $uuid) (ref.func $indexOf))
+        (wasm.export (ref.module $uuid) (ref.func $has))
+        (wasm.export (ref.module $uuid) (ref.func $count))
+        (wasm.export (ref.module $uuid) (ref.func $forEach))
+        (wasm.export (ref.module $uuid) (ref.func $push))
+        (wasm.export (ref.module $uuid) (ref.func $at))
+
+        (call $register_command)
     )
 
 
+    (func $register_command
+        (call $console.register_command
+            (text "uuid")
+            (ref.func $handle_command)
+            (array $of<ext.ext.ext.ext.ext.ext>ext 
+                (text "indexOf")
+                (text "has")
+                (text "count")
+                (text "forEach")
+                (text "push")
+                (text "at")
+            )
+        )
+    )
+
+    (func $handle_command
+        (param $arguments <Array>)
+
+        (if (object $is<ext.ext>i32 (get.i32_extern (this) i32(0)) (text "-at"))
+            (then 
+                (call $at (get.i32 (this) i32(1)))
+                (console $warn<ext>)
+            )
+        )
+
+        (if (object $is<ext.ext>i32 (get.i32_extern (this) i32(0)) (text "-indexOf"))
+            (then 
+                (call $indexOf (get.i32_extern (this) i32(1)))
+                (console $warn<i32>)
+            )
+        )
+
+        (if (object $is<ext.ext>i32 (get.i32_extern (this) i32(0)) (text "-has"))
+            (then 
+                (call $has (get.i32_extern (this) i32(1)))
+                (console $warn<i32>)
+            )
+        )
+
+        (if (object $is<ext.ext>i32 (get.i32_extern (this) i32(0)) (text "-push"))
+            (then 
+                (call $push (get.i32_extern (this) i32(1)))
+                (console $warn<i32>)
+            )
+        )
+
+        (if (object $is<ext.ext>i32 (get.i32_extern (this) i32(0)) (text "-forEach"))
+            (then 
+                (call $forEach 
+                    (if (result externref)
+                        (reflect $has<ext.ext>i32 (ref.extern $console) (get.i32_extern (this) i32(1)))
+                        (then (get.extern (ref.extern $console) (get.i32_extern (this) i32(1))))
+                        (else (get.extern (self) (get.i32_extern (this) i32(1))))
+                    )
+                    (get.i32_extern (this) i32(2))
+                )
+            )
+        )
+
+        (if (object $is<ext.ext>i32 (get.i32_extern (this) i32(0)) (text "-count"))
+            (then 
+                (call $count)
+                (console $warn<i32>)
+            )
+        )
+    )
 
     (func $forEach
         (param $callback externref)
@@ -52,7 +122,7 @@
                         (local.get $callback)
                         (local.get $thisArg)
                         (array $of<ext.i32>ext
-                            (table.get $ref (i32x4.extract_lane 2 (local.get $iterated)))
+                            (call $at (i32x4.extract_lane 2 (local.get $iterated)))
                             (i32x4.extract_lane 2 (local.get $iterated))
                         )
                     )
@@ -67,7 +137,7 @@
         )
     )
 
-    (func $size 
+    (func $count 
         (result i32) 
         (global.get $UUID_COUNT)
     )
@@ -93,36 +163,20 @@
         (call $find (call $parse_uuid_vector (local.get $string)))
     )
 
-    (func $get
-        (param $string externref)
-        (result externref)
-
-        (table.get $ref (call $indexOf (local.get $string)))
-    )
-
     (func $push
         (param $string externref)
-        (result i32)
-
-        (call $set (this) (null))
-    )
-    
-
-    (func $set
-        (param $string externref)
-        (param $extern externref)
         (result i32)
         (local $index i32)
 
         (call $set_index_vector
-            (local.tee $index (call $next_vector_index (local.get $extern)))
+            (local.tee $index (call $next_vector_index))
             (call $parse_uuid_vector (local.get $string))
         )
 
-        (local.get $index)
+        (local.get $index)    
     )
     
-    (func $key
+    (func $at
         (param $index i32)
         (result externref)
 
@@ -170,7 +224,6 @@
     )
 
     (func $next_vector_index
-        (param $extern externref)
         (result i32)
         (local $index i32)
 
@@ -182,8 +235,8 @@
         (if (i32.eqz (i32.and (global.get $UUID_COUNT) (i32.const 15)))
             (then (global.set $BLOCK_COUNT (i32.add (global.get $BLOCK_COUNT) (i32.const 1))))
         )
-
-        (table.grow $ref (this) (true))        
+        
+        (local.get $index)
     )
 
     (func $set_index_vector
@@ -240,7 +293,7 @@
         (result i32)
         
         (call $self.parseInt<ext.i32>i32 
-            (reflect $get<ext.i32>ext (local.get $array) (local.get $index)) 
+            (get.i32_extern (this) (local.get $index)) 
             (i32.const 16)
         )
     )
