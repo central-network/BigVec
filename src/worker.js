@@ -1,1 +1,1 @@
-onmessage = e => Object.assign(self, e.data).WebAssembly.instantiate(module, this)
+postMessage(!(onmessage = e => Object.assign(self, e.data).WebAssembly.instantiate(module, this).then(close)))

@@ -163,15 +163,16 @@
     )
 
     (func $handle_request
-        (param $index i32)
-        (result     <NaN>)
+        (param $index             i32)
+        (result                <Null>)
+
         (call $reset)
 
         (reflect $apply<ext.ext.ext> (table.get $externref (i32.add i32(1) (this))) (null) (self))
         (reflect $apply<ext.ext.ext> (table.get $externref (i32.add i32(2) (this))) (null) (self))
         (reflect $apply<ext.ext.ext> (table.get $externref (i32.add i32(3) (this))) (null) (self))
 
-        (NaN)
+        (null)
     )
 
     (func $create_getter_descriptor
