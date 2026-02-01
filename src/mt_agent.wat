@@ -6,26 +6,15 @@
     (import "wasm" "length" (global $MODULE_LENGTH i32))
 
     (main $worker_thread
-        (console $warn<ext.i32.i32.ext>
-            (text "worker thread started")
-            (global.get $MODULE_OFFSET)
-            (global.get $MODULE_LENGTH)
-            (self)
-        )
-
-        (warn (self))
-
-        (set.extern (self) (text "onerror") (ref.extern $close))
-        (set.extern (self) (text "onunhandledrejection") (ref.extern $close))
-
+        (call $set_current_status (global.get $WORKER_STATUS_READY))
+        (call $bind_scope)
         (call $mutex_loop)
-        (unreachable)
+        (call $set_current_status (global.get $WORKER_STATUS_CLOSED))
     )
 
     (func $mutex_loop
         (block $close
             (loop $while
-                (call $set_current_status (global.get $WORKER_STATUS_READY))
                 (call $lock_mutex) 
                 (debug "mutex unlocked")
 
@@ -35,8 +24,13 @@
                 (br_if $while (call $has_notify))
             )
 
-            (call $set_current_status (global.get $WORKER_STATUS_CLOSED))
+            (call $self.postMessage<i32> (global.get $WORKER_EVENT_CODE_CLOSE))
             (call $self.close<>)
         )
+    )
+
+    (func $bind_scope
+        (set.extern (self) (text "onerror") (ref.extern $close))
+        (set.extern (self) (text "onunhandledrejection") (ref.extern $close))
     )
 )

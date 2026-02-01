@@ -1,8 +1,7 @@
 (module
     (include "shared/imports.wat")
     (include "call_indirect/idb.wat")
-    (include "call_indirect/console.wat")
-
+    
     (memory $base {{PAGE_COUNT}})
 
     (global $MAX_COUNT   mut i32)
@@ -34,77 +33,8 @@
         (wasm.export (ref.module $uuid) (ref.func $forEach))
         (wasm.export (ref.module $uuid) (ref.func $push))
         (wasm.export (ref.module $uuid) (ref.func $at))
-
-        (call $register_command)
     )
 
-
-    (func $register_command
-        (call $console.register_command
-            (text "uuid")
-            (ref.func $handle_command)
-            (array $of<ext.ext.ext.ext.ext.ext>ext 
-                (text "indexOf")
-                (text "has")
-                (text "count")
-                (text "forEach")
-                (text "push")
-                (text "at")
-            )
-        )
-    )
-
-    (func $handle_command
-        (param $arguments <Array>)
-
-        (if (object $is<ext.ext>i32 (get.i32_extern (this) i32(0)) (text "-at"))
-            (then 
-                (call $at (get.i32 (this) i32(1)))
-                (console $warn<ext>)
-            )
-        )
-
-        (if (object $is<ext.ext>i32 (get.i32_extern (this) i32(0)) (text "-indexOf"))
-            (then 
-                (call $indexOf (get.i32_extern (this) i32(1)))
-                (console $warn<i32>)
-            )
-        )
-
-        (if (object $is<ext.ext>i32 (get.i32_extern (this) i32(0)) (text "-has"))
-            (then 
-                (call $has (get.i32_extern (this) i32(1)))
-                (console $warn<i32>)
-            )
-        )
-
-        (if (object $is<ext.ext>i32 (get.i32_extern (this) i32(0)) (text "-push"))
-            (then 
-                (call $push (get.i32_extern (this) i32(1)))
-                (console $warn<i32>)
-            )
-        )
-
-        (if (object $is<ext.ext>i32 (get.i32_extern (this) i32(0)) (text "-forEach"))
-            (then 
-                (call $forEach 
-                    (if (result externref)
-                        (reflect $has<ext.ext>i32 (ref.extern $console) (get.i32_extern (this) i32(1)))
-                        (then (get.extern (ref.extern $console) (get.i32_extern (this) i32(1))))
-                        (else (get.extern (self) (get.i32_extern (this) i32(1))))
-                    )
-                    (get.i32_extern (this) i32(2))
-                )
-            )
-        )
-
-        (if (object $is<ext.ext>i32 (get.i32_extern (this) i32(0)) (text "-count"))
-            (then 
-                (call $count)
-                (console $warn<i32>)
-            )
-        )
-    )
 
     (func $forEach
         (param $callback externref)

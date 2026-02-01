@@ -1,136 +1,100 @@
-(module
+(module $mt
     (include "shared/memory.wat")
     (include "shared/imports.wat")
     (include "shared/worker.wat")
 
     (data $worker.js "file://worker.js")
-    (data $agent.wasm "wasm://mt_agent.wat")
+    (data $mt_self "wasm://mt_self.wat")
+    (data $mt_agent "wasm://mt_agent.wat")
+    (data $mt_console "wasm://bind_console/mt.wat")
+    (data $console "file://../wasm/console.wasm")
+
+    (global $module.console mut i32)
+    (global $module.mt_self mut i32)
+    (global $module.mt_agent mut i32)
+    (global $module.mt_console mut i32)
 
     (global $MODULE_OFFSET mut i32)
-    (global $MODULE_LENGTH i32 i32(256))
+    (global $MODULE_LENGTH i32 i32(64))
 
-    (main $mt
-        (debug "hello from mt")
+    (main $portal
+        (set.extern (self) (text "wasm") (wasm))
+        (async
+            (array $fromAsync<ext>ext
+                (array $of<ext.ext.ext.ext>ext
+                    (wasm.compile (data.view $console))
+                    (wasm.compile (data.view $mt_self))
+                    (wasm.compile (data.view $mt_agent))
+                    (wasm.compile (data.view $mt_console))
+                )
+            )
+            (then $oncompile
+                (param $items    <Array>)
+                (result        <Promise>)
+                (local $module  <Module>)
 
+                (local.tee $module (get.i32_extern (this) i32(1)))
+                (global.set $module.mt_self (table.add $externref (true)))
+                (wasm.set_i32 "module.mt_self" (global.get $module.mt_self))
+
+                (local.tee $module (get.i32_extern (this) i32(2)))
+                (global.set $module.mt_agent (table.add $externref (true)))
+                (wasm.set_i32 "module.mt_agent" (global.get $module.mt_agent))
+
+                (local.tee $module (get.i32_extern (this) i32(3)))
+                (global.set $module.mt_console (table.add $externref (true)))
+                (wasm.set_i32 "module.mt_console" (global.get $module.mt_console))
+
+                (local.tee $module (get.i32_extern (this) i32(0)))
+                (global.set $module.console (table.add $externref (true)))
+                (wasm.set_i32 "module.console" (global.get $module.console))
+
+                (wasm.instantiate (local.get $module))
+            ) 
+            (then $onconsolemodule
+                (call $main)
+            )
+        )
+    )
+
+    (func $main
+        (local $module  <Module>)
         (global.set $MODULE_OFFSET (malloc (global.get $MODULE_LENGTH)))
 
-        (call $reset_status)
-        (call $reset_mutex)
-        (call $clear_sigint)
+        (wasm.export (ref.module $mt) (ref.func $fork))
+        (wasm.export (ref.module $mt) (ref.func $ref))
+        (wasm.export (ref.module $mt) (ref.func $close))
+
+        (local.set $module (table.get $externref (global.get $module.mt_console)))
+        (wasm.instantiate (local.get $module))
+        (drop)
+    )
+
+    (func $fork
+        (param $count           i32)
+        (result                 i32)
+        (local $instance <Instance>)
+        (local $index           i32)
 
         (async
-            (wasm.compile (data.view $agent.wasm))
-            (then $onagentmodule
-                (param $module.wasm         <Module>)
-                (local $data                <Object>)
-                (local $module              <Object>)
-
-                (local.set $data (object))
-                (local.set $module (object))
-
-                (set.extern     (local.get $module) (text "#memory") (global.get $memory))
-                (set.extern     (local.get $module) (text "module") (local.get $module.wasm))
-                (set.extern_i32 (local.get $module) (text "offset") (global.get $MODULE_OFFSET))
-                (set.extern_i32 (local.get $module) (text "length") (global.get $MODULE_LENGTH))
-
-                (set.extern (local.get $data) (text "wasm") (local.get $module))
-
-                (call $set_data_extern_index (call $add_externref (local.get $data)))
-            )
-            (then $onagentdata
-                (call $create)
-                (call $instantiate)
+            (wasm.instantiate $module.mt_self)
+            (then $oninstance
+                (param $instance <Instance>)
+                (warn (this))
             )
         )
-
-        (call $self.setInterval<fun.i32>
-            (func $delayed2loa
-                (call $unlock_mutex)
-            )
-            i32(3100)
-        )
-    )
-
-    (func $add_externref
-        (param $any       externref)
-        (result                 i32)
-        (table.add $externref (this) (true))
-    )
-
-    (func $remove_extern
-        (param $index           i32)
-        (table.set $externref (this) (null))
-    )
-
-    (func $get_process
-        (result            <Worker>)
-        (table.get $externref (call $get_process_extern_index))
-    )
-
-    (func $get_data
-        (result            <Worker>)
-        (table.get $externref (call $get_data_extern_index))
-    )
-
-    (func $new_process
-        (result <Worker>)
-        
-        (reflect $construct<ext.ext>ext 
-            (ref.extern $Worker) 
-            (array $of<ext>ext (data.url $worker.js))
-        )
-    )
-
-    (func $performance.now
-        (result i32)
-        
-        (reflect $apply<ext.ext.ext>i32 
-            (ref.extern $Performance:now) 
-            (ref.extern $performance) 
-            (array)
-        )
-    )
-
-    (func $create
-        (local $worker_thread   <Worker>)
-        (local $extern_index         i32)
-        (call $set_current_status (global.get $WORKER_STATUS_CREATE_BEGIN))
-
-        (local.set $worker_thread (call $new_process))
-        (local.set $extern_index  (call $add_externref (this)))
-
-        (call $set_process_extern_index (local.get $extern_index))
-        (call $set_new_worker_time (call $performance.now))
-
-        (call $set_current_status (global.get $WORKER_STATUS_CREATE_END))
-    )
-
-    (func $instantiate
-        (reflect $apply<ext.ext.ext> 
-            (ref.extern $Worker:postMessage) 
-            (call $get_process)
-            (array $of<ext>ext (call $get_data))
-        )
+        (true)
     )
 
     (func $close
-        (call $set_current_status (global.get $WORKER_STATUS_CLOSING))
-        (call $mark_sigint)
-        (call $unlock_mutex)
-        (call $terminate)
-        (call $set_current_status (global.get $WORKER_STATUS_CLOSED))
+        (param $index        i32)
     )
 
-    (func $terminate
-        (call $set_current_status (global.get $WORKER_STATUS_TERMINATE_BEGIN))
+    (func $ref
+        (param $index        i32)
+        (result         <Worker>)
 
-        (reflect $apply<ext.ext.ext> 
-            (ref.extern $Worker:terminate) 
-            (call $get_process)
-            (array)
-        )
-
-        (call $remove_extern (call $get_process_extern_index))
-        (call $set_current_status (global.get $WORKER_STATUS_TERMINATE_END))
+        (null)
     )
+
 )

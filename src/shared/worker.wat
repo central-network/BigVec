@@ -1,5 +1,6 @@
 
     (global $MUTEXT_TIMEOUT_SECS i64 (i64.secs 10))
+    (global $MUTEXT_OFFSET       mut i32)
 
     (global $WORKER_STATUS_CLOSED           i32 i32(0))
     (global $WORKER_STATUS_READY            i32 i32(1))
@@ -9,8 +10,11 @@
     (global $WORKER_STATUS_CREATE_BEGIN     i32 i32(5))
     (global $WORKER_STATUS_CREATE_END       i32 i32(6))
 
+    (global $WORKER_EVENT_CODE_CLOSE        i32 i32(0))
+
     (func $set_process_extern_index (param i32) (i32.store offset=0 (global.get $MODULE_OFFSET) (this)))
     (func $get_process_extern_index (result i32) (i32.load offset=0 (global.get $MODULE_OFFSET)))
+    (func $reset_process_extern_index (i32.atomic.store offset=0 (global.get $MODULE_OFFSET) (false)))
 
     (func $set_data_extern_index    (param i32) (i32.store offset=20 (global.get $MODULE_OFFSET) (this)))
     (func $get_data_extern_index    (result i32) (i32.load offset=20 (global.get $MODULE_OFFSET)))

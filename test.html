@@ -6,7 +6,7 @@
     //self.memory = new LocalSharedMemory(1, 65536, true);
 
     WebAssembly.instantiateStreaming(fetch("wasm/import.wasm"), self).then(i => {
-        self.wasm = i.instance.exports;
+        self.wasm = Object.assign({}, i.instance.exports);
         WebAssembly.instantiateStreaming(fetch("wasm/mt.wasm"), self).then(i => console.log(i.instance));
     });
     

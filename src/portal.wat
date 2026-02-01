@@ -4,6 +4,9 @@
     (data $import.wasm "file://../wasm/import.wasm")
     (data $console.wasm "file://../wasm/console.wasm")
 
+    (data $idb_console.wasm "file://../wasm/idb_console.wasm")
+    (data $uuid_console.wasm "file://../wasm/uuid_console.wasm")
+
     (global $wasm new Object)
 
     (global $idb.wasm mut ext)
@@ -16,8 +19,9 @@
 
         (async 
             (array $fromAsync<ext>ext
-                (array $of<ext.ext.ext.ext>ext
+                (array $of<ext.ext.ext.ext.ext>ext
                     (wasm.compile (data.view $idb.wasm))
+                    (wasm.compile (data.view $idb_console.wasm))
                     (wasm.compile (data.view $uuid.wasm))
                     (wasm.compile (data.view $import.wasm))
                     (wasm.compile (data.view $console.wasm))
