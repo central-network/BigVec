@@ -1,0 +1,70 @@
+(module
+    (import "0" "0" (func (param) (result))) (; self.console.debug ;)
+    (import "0" "1" (func (param) (result))) (; self.console.warn ;)
+    (import "0" "2" (func (param) (result))) (; self.MessageEvent.prototype.data ;)
+    (import "0" "3" (func (param) (result))) (; self.MessageEvent.prototype.data/set ;)
+    (import "0" "4" (func (param) (result))) (; self.MessageEvent.prototype.data/get ;)
+    (import "0" "5" (func (param) (result))) (; self.Navigator.prototype.devicePixelRatio/get ;)
+    (import "0" "6" (func (param) (result))) (; self.Promise.withResolvers ;)
+    (import "0" "7" (func (param) (result))) (; self.Promise.prototype.then ;)
+    (import "0" "8" (func (param) (result))) (; self.Promise.prototype.catch ;)
+
+    (import "1" "0" (global externref)) (; self.length ;)
+    (import "1" "1" (global externref)) (; self.location.href ;)
+    (import "1" "2" (global externref)) (; self.MessageEvent ;)
+    (import "1" "3" (global externref)) (; self.MessageEvent.prototype.data/get ;)
+    (import "1" "4" (global externref)) (; self.navigator ;)
+    (import "1" "5" (global externref)) (; self.navigator.gpu ;)
+    (import "1" "6" (global externref)) (; self.navigator.gpu.length/get ;)
+    (import "1" "7" (global externref)) (; self.Navigator.prototype.devicePixelRatio/get ;)
+    (import "1" "8" (global externref)) (; self.Navigator.prototype.gpu/get ;)
+    (import "1" "9" (global externref)) (; self.Navigator.prototype.devicePixelRatio/set ;)
+    (import "1" "10" (global externref)) (; self.length/get ;)
+    (import "1" "11" (global externref)) (; self.Promise.prototype ;)
+    (import "1" "12" (global externref)) (; self.Float32Array.prototype.BYTES_PER_ELEMENT ;)
+    
+    (memory (export "memory") 1 65536 shared)
+    
+    (table (export "funcref") 13 65536 funcref)
+    (table (export "externref") 9 65536 externref)
+
+    (elem funcref 
+        (ref.func 0)
+        (ref.func 1)
+        (ref.func 2)
+        (ref.func 3)
+        (ref.func 4)
+        (ref.func 5)
+        (ref.func 6)
+        (ref.func 7)
+        (ref.func 8)
+    )
+    
+    (elem externref 
+        (global.get 0)
+        (global.get 1)
+        (global.get 2)
+        (global.get 3)
+        (global.get 4)
+        (global.get 5)
+        (global.get 6)
+        (global.get 7)
+        (global.get 8)
+        (global.get 9)
+        (global.get 10)
+        (global.get 11)
+        (global.get 12)
+    )
+        
+    (func $main
+        (table.init 0 0 (i32.const 0) (i32.const 0) (i32.const 13))
+        (table.init 1 1 (i32.const 0) (i32.const 0) (i32.const 9))
+
+        (elem.drop 0)
+        (elem.drop 1)
+
+        (i32.store (i32.const 0) (i32.const 16))
+    )
+
+    (start $main)
+)

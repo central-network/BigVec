@@ -1,0 +1,165 @@
+[33m[nodemon] 3.1.10[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): *.*[39m
+[33m[nodemon] watching extensions: js,mjs,cjs,json[39m
+[32m[nodemon] starting `node test.mjs`[39m
+{
+  self: {
+    navigator: { gpu: [Object] },
+    length: { get: {} },
+    console: { log: {}, warn: {}, debug: {} },
+    location: { href: {} },
+    Promise: { prototype: [Object] },
+    Navigator: { prototype: [Object] },
+    MessageEvent: { prototype: [Object] }
+  }
+}
+
+(block $self
+    (local.set 0 (global.get $self))
+     
+     (block $self.navigator
+         (local.set 1 (reflect.get (local.get 0) (text "navigator")))
+         
+         (block $self.navigator.gpu
+           (local.set 2 (reflect.get (local.get 1) (text "gpu")))
+           
+           (block $self.navigator.gpu.length
+              (local.set 3 (reflect.get (local.get 2) (text "length")))
+              
+              (block $self.navigator.gpu.length.get
+                  (local.set 4 (reflect $getOwnPropertyDescriptor<ext.ext>ext (local.get 3) (text "get")))
+                  (local.set 4 (reflect $get<ext.ext>ext (local.get 4) (text "get")))
+                  (table.set $ext (i32.const 1) (local.get 4))
+                  (; $self.navigator.gpu.length ;)
+              )
+          )
+       )
+     )
+ 
+ 
+     (block $self.length
+         (local.set 1 (reflect.get (local.get 0) (text "length")))
+         
+         (block $self.length.get
+           (local.set 2 (reflect $getOwnPropertyDescriptor<ext.ext>ext (local.get 1) (text "get")))
+           (local.set 2 (reflect $get<ext.ext>ext (local.get 2) (text "get")))
+           (table.set $ext (i32.const 2) (local.get 2))
+           (; $self.length ;)
+       )
+     )
+ 
+ 
+     (block $self.console
+         (local.set 1 (reflect.get (local.get 0) (text "console")))
+         
+         (block $self.console.log
+           (local.set 2 (reflect $get<ext.ext>ext (local.get 1) (text "log")))
+           (table.set $fun (i32.const 1) (local.get 2))
+           (; $self.console ;)
+       )
+   
+   
+       (block $self.console.warn
+           (local.set 2 (reflect $get<ext.ext>ext (local.get 1) (text "warn")))
+           (table.set $fun (i32.const 2) (local.get 2))
+           (; $self.console ;)
+       )
+   
+   
+       (block $self.console.debug
+           (local.set 2 (reflect $get<ext.ext>ext (local.get 1) (text "debug")))
+           (table.set $fun (i32.const 3) (local.get 2))
+           (; $self.console ;)
+       )
+     )
+ 
+ 
+     (block $self.location
+         (local.set 1 (reflect.get (local.get 0) (text "location")))
+         
+         (block $self.location.href
+           (local.set 2 (reflect $get<ext.ext>ext (local.get 1) (text "href")))
+           (table.set $ext (i32.const 3) (local.get 2))
+           (; $self.location ;)
+       )
+     )
+ 
+ 
+     (block $self.Promise
+         (local.set 1 (reflect.get (local.get 0) (text "Promise")))
+         
+         (block $self.Promise.prototype
+           (local.set 2 (reflect.get (local.get 1) (text "prototype")))
+           
+           (block $self.Promise.prototype.then
+              (local.set 3 (reflect $get<ext.ext>ext (local.get 2) (text "then")))
+              (table.set $fun (i32.const 4) (local.get 3))
+              (; $self.Promise.prototype ;)
+          )
+       )
+     )
+ 
+ 
+     (block $self.Navigator
+         (local.set 1 (reflect.get (local.get 0) (text "Navigator")))
+         
+         (block $self.Navigator.prototype
+           (local.set 2 (reflect.get (local.get 1) (text "prototype")))
+           
+           (block $self.Navigator.prototype.gpu
+              (local.set 3 (reflect.get (local.get 2) (text "gpu")))
+              
+              (block $self.Navigator.prototype.gpu.get
+                  (local.set 4 (reflect $getOwnPropertyDescriptor<ext.ext>ext (local.get 3) (text "get")))
+                  (local.set 4 (reflect $get<ext.ext>ext (local.get 4) (text "get")))
+                  (table.set $ext (i32.const 4) (local.get 4))
+                  (; $self.Navigator.prototype.gpu ;)
+              )
+          )
+      
+      
+          (block $self.Navigator.prototype.devicePixelRatio
+              (local.set 3 (reflect.get (local.get 2) (text "devicePixelRatio")))
+              
+              (block $self.Navigator.prototype.devicePixelRatio.get
+                  (local.set 4 (reflect $getOwnPropertyDescriptor<ext.ext>ext (local.get 3) (text "get")))
+                  (local.set 4 (reflect $get<ext.ext>ext (local.get 4) (text "get")))
+                  (table.set $ext (i32.const 5) (local.get 4))
+                  (; $self.Navigator.prototype.devicePixelRatio ;)
+              )
+          )
+       )
+     )
+ 
+ 
+     (block $self.MessageEvent
+         (local.set 1 (reflect.get (local.get 0) (text "MessageEvent")))
+         
+         (block $self.MessageEvent.prototype
+           (local.set 2 (reflect.get (local.get 1) (text "prototype")))
+           
+           (block $self.MessageEvent.prototype.data
+              (local.set 3 (reflect.get (local.get 2) (text "data")))
+              
+              (block $self.MessageEvent.prototype.data.set
+                  (local.set 4 (reflect $getOwnPropertyDescriptor<ext.ext>ext (local.get 3) (text "set")))
+                  (local.set 4 (reflect $get<ext.ext>ext (local.get 4) (text "set")))
+                  (table.set $fun (i32.const 5) (local.get 4))
+                  (; $self.MessageEvent.prototype.data ;)
+              )
+          
+          
+              (block $self.MessageEvent.prototype.data.get
+                  (local.set 4 (reflect $getOwnPropertyDescriptor<ext.ext>ext (local.get 3) (text "get")))
+                  (local.set 4 (reflect $get<ext.ext>ext (local.get 4) (text "get")))
+                  (table.set $fun (i32.const 6) (local.get 4))
+                  (; $self.MessageEvent.prototype.data ;)
+              )
+          )
+       )
+     )
+ 
+)
+
+[32m[nodemon] clean exit - waiting for changes before restart[39m

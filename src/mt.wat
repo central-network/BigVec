@@ -18,6 +18,39 @@
     (global $MODULE_LENGTH i32 i32(64))
 
     (main $portal
+        (apply $Performance:now<ext>f32
+            (self $performance<ext>)
+        )
+
+        (apply $Promise:then
+            (param externref externref)
+            (result externref)
+            (self)
+            (array $of<fun>ext 
+                (apply $navigator.gpu<ext>ext
+                    (self $navigator)
+                )
+            )
+        )
+
+        (apply $Promise:catch
+            (param externref externref)
+            (result externref)
+            (self)
+            (array $of<fun>ext 
+                (apply $navigator.gpu<ext>ext
+                    (self $navigator)
+                )
+            )
+        )
+
+        (apply $WebAssembly.Memory:buffer[get]
+            (param)
+            (result externref)
+            (self)
+            (array)
+        )
+
         (set.extern (self) (text "wasm") (wasm))
         (async
             (array $fromAsync<ext>ext

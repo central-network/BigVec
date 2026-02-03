@@ -4,5 +4,7 @@ cd src
 #wat4wasm --input=console.wat --output=../wasm/console.wasm --wat2wasm=wat2wasm --keep-unused-functions --debug-names --enable-threads
 #wat4wasm --input=uuid.wat --output=../wasm/uuid.wasm --wat2wasm=wat2wasm --keep-unused-functions --apply=../assets/replace_wat.js --debug-names --enable-threads 
 #wat4wasm --input=portal.wat --output=../wasm/portal.wasm --wat2wasm=wat2wasm --keep-unused-functions --debug-names --enable-threads 
-wat4wasm --input=mt.wat --output=../wasm/mt.wasm --wat2wasm=wat2wasm --keep-unused-functions --debug-names --enable-threads 
+#wat4wasm --input=mt.wat --output=../wasm/mt.wasm --wat2wasm=wat2wasm --keep-unused-functions --debug-names --enable-threads 
+wat2wasm --debug-names src/s.wat -o wasm/s.wasm
+wat4wasm --input=m.wat --output=../wasm/m.wasm --wat2wasm=wat2wasm --keep-unused-functions --debug-names --enable-threads 
 cd ..
