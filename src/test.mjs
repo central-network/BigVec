@@ -200,9 +200,6 @@ imports_wat = String(`
     
     (memory (export "memory") 1 65536 shared)
     
-    (table (export "funcref") ${externref_count} 65536 funcref)
-    (table (export "externref") ${funcref_count} 65536 externref)
-
     (elem funcref 
         ${funcref_elements.trimStart()}
     )
@@ -211,9 +208,9 @@ imports_wat = String(`
         ${externref_elements.trimStart()}
     )
         
-    (func $main
-        (table.init 0 0 (i32.const 0) (i32.const 0) (i32.const ${externref_count}))
-        (table.init 1 1 (i32.const 0) (i32.const 0) (i32.const ${funcref_count}))
+    (func $init
+        (table.init 0 0 (i32.const 0) (i32.const 0) (i32.const ${funcref_count}))
+        (table.init 1 1 (i32.const 0) (i32.const 0) (i32.const ${externref_count}))
 
         (elem.drop 0)
         (elem.drop 1)
@@ -221,7 +218,10 @@ imports_wat = String(`
         (i32.store (i32.const 0) (i32.const 16))
     )
 
-    (start $main)
+    (table (export "funcref") ${funcref_count} 65536 funcref)
+    (table (export "externref") ${externref_count} 65536 externref)
+
+    (start $init)
 )
 `).trim();
 
@@ -238,7 +238,6 @@ const locals = new Array(max_level+1).fill(`externref`).join(` `);
 
 const wat4 = `
 (module
-    (memory 1)
     (import "self" "self" (global $self externref))
     (import "self" "Array" (func $array (param) (result externref)))
     (import "Reflect" "get" (func $get (param externref externref) (result externref)))
@@ -246,50 +245,53 @@ const wat4 = `
     (import "Reflect" "apply" (func $apply (param externref externref externref) (result externref)))
     (import "Reflect" "getOwnPropertyDescriptor" (func $desc (param externref externref) (result externref)))
 
+    (memory 1)
+
     (func $main
         (local ${locals})
         (local $funcref externref)
         (local $externref externref)
         (local $imports externref)
 
-        (local.set 0 (global.get $self))
-        (local.set $funcref (call $array))
-        (local.set $externref (call $array))
-
-${';;      (blocks ...)' || blocks_wat.trimStart()}
-        
-        (local.set $imports (call $array))
+        (local.set $funcref     (call $array))
+        (local.set $externref   (call $array))
+        (local.set $imports     (call $array))
 
         (call $set (local.get $imports) (i32.const 0) (local.get $funcref))
         (call $set (local.get $imports) (i32.const 1) (local.get $externref))
 
-;;      (call $apply
-;;          (local.get $WebAssembly.instantiate)
-;;          (data.view $export.wasm) 
-;;          (local.get $imports)
-;;      )
-;;      (then $onwasmready
-;;          (param $instance   <Object>)
-;;          (result           <Promise>)
-;;          
-;;          (call $apply 
-;;              (local.get $WebAssembly.instantiate)
-;;              (data.view $module.wasm) 
-;;              (call $get (local.get 0) (text "exports"))
-;;          )
-;;      )
-;;      (then $onmoduleready
-;;          (param $instance   <Object>)
-;;          
-;;          (;  
-;;              at
-;;                 this
-;;                      point
-;;                 job
-;;              done
-;;          ;)
-;;      )
-;;      
+        |-------------------------------------------------------------------
+        |                                                                  |
+        |       (blocks ...)' || blocks_wat.trimStart()}                   |
+        |                                                                  |
+        |       (call $apply                                               |
+        |           (local.get $WebAssembly.instantiate)                   |
+        |           (data.view $export.wasm)                               |
+        |           (local.get $imports)                                   |
+        |       )                                                          |
+        |       (then $onwasmready                                         |
+        |           (param $instance   <Object>)                           |
+        |           (result           <Promise>)                           |
+        |                                                                  |
+        |           (call $apply                                           |
+        |               (local.get $WebAssembly.instantiate)               |
+        |               (data.view $module.wasm)                           |
+        |               (call $get (local.get 0) (text "exports"))         |
+        |           )                                                      |
+        |       )                                                          |
+        |       (then $onmoduleready                                       |
+        |           (param $instance   <Object>)                           |
+        |                                                                  |
+        |           (;                                                     |
+        |               at                                                 |
+        |                  this                                            |
+        |                       point                                      |
+        |                  done                                             |
+        |               is                                               |
+        |           ;)                                                     |
+        |       )                                                          |
+        |                                                                  |
+        |------------------------------------------------------------------|
     )
 
     (data $module "\\00\\00\\00\\00")

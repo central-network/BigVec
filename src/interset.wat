@@ -25,9 +25,6 @@
     
     (memory (export "memory") 1 65536 shared)
     
-    (table (export "funcref") 13 65536 funcref)
-    (table (export "externref") 9 65536 externref)
-
     (elem funcref 
         (ref.func 0)
         (ref.func 1)
@@ -56,9 +53,9 @@
         (global.get 12)
     )
         
-    (func $main
-        (table.init 0 0 (i32.const 0) (i32.const 0) (i32.const 13))
-        (table.init 1 1 (i32.const 0) (i32.const 0) (i32.const 9))
+    (func $init
+        (table.init 0 0 (i32.const 0) (i32.const 0) (i32.const 9))
+        (table.init 1 1 (i32.const 0) (i32.const 0) (i32.const 13))
 
         (elem.drop 0)
         (elem.drop 1)
@@ -66,5 +63,8 @@
         (i32.store (i32.const 0) (i32.const 16))
     )
 
-    (start $main)
+    (table (export "funcref") 9 65536 funcref)
+    (table (export "externref") 13 65536 externref)
+
+    (start $init)
 )
