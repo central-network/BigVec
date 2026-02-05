@@ -18,7 +18,7 @@
                 (local.get $event)
             )
             (ref.extern "Özgür Fırat Özpolat")
-            (ref.extern $location.href)
+            (ref.extern $self.location.href)
         )
     )
     
