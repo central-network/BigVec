@@ -11,7 +11,7 @@
             (result)
 
             (ref.null extern)
-            (call_direct $MessageEvent:data[get]
+            (call_indirect $self.MessageEvent:data[get]
                 (param externref)
                 (result externref)
 
