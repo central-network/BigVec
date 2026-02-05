@@ -1,41 +1,34 @@
 (module
-    (type $log_ext (func (param externref) (result)))
-
     (elem $funcs funcref
         (ref.func $onmessage)
-    )
-
-    (func $main
-        (call_direct $EventTarget:addEventListener 
-            (param externref externref funcref)
-            (result)
-
-            (ref.extern $navigator)
-            (text "message")
-            (ref.func $onmessage)
-        )
     )
 
     (func $onmessage
         (param $event externref)
 
-        (call_direct $console.log
-            (type $log_ext)
+        (call_direct $console.warn
+            (param externref externref externref) 
+            (result)
 
+            (ref.null extern)
             (call_direct $MessageEvent:data[get]
                 (param externref)
                 (result externref)
 
                 (local.get $event)
             )
+            (text "Özgür Fırat Özpolat")
         )
-
-        (ref.extern $devicePixelRatio)
-        (drop)
-
-        (text "hello world")
-        (drop)
     )
+    
+    (start $main
+        (call_direct $EventTarget:addEventListener 
+            (param externref externref funcref)
+            (result)
 
-    (start $main)
+            (self)
+            (text "message")
+            (ref.func $onmessage)
+        )
+    )
 )

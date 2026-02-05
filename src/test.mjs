@@ -46,6 +46,7 @@ const blocks = new Object();
 const signatures = new Map();
 
 let text_data = ``;
+let text_length = ``;
 let interset_wat = ``;
 let text_count = 0;
 let funcref_count = 1;
@@ -59,6 +60,28 @@ let func_interset_wat = `(import "0" "0" (func (; void ;) (param) (result)))`;
 let ref_interset_wat = `(import "1" "0" (global (; null ;) externref))`;
 let text_interset_wat = ``;
 
+
+String.prototype.encode = function () {
+    const buffer = [];
+
+    for (const char of this) {
+        const code = char.codePointAt(0); // Emojiyi tek parça sayı olarak alır (örn: 128640)
+
+        if (code < 128) {
+            // ASCII: Direkt ekle (1 Bayt)
+            buffer.push(code);
+        } else {
+            // UNICODE: İşaretçi (255) + 4 Bayt (Little Endian)
+            buffer.push(128); 
+            buffer.push(code & 0xff);
+            buffer.push((code >> 8) & 0xff);
+            buffer.push((code >> 16) & 0xff);
+            buffer.push((code >> 24) & 0xff);
+        }
+    }
+
+    return buffer;
+}
 
 String.prototype.isBlock = function () {
     let raw = this.trim();
@@ -244,7 +267,10 @@ $5    (HAS_GLOBAL:$1.$2/$3)
 $5)`)
     .replaceAll(/\(block\s+\$(.*)\.(.[^\.]*)\/(value)(\s+)\n(\s+)\)/gm, `(block $$$1.$2
 $5    (local.set [LEVEL:$1.$2]
-$5        (call $eget (local.get [LEVEL:$1]) (text "$2"))
+$5        (call $eget 
+$5            (local.get [LEVEL:$1]) 
+$5            (text "$2")
+$5        )
 $5    )
 $5    (HAS_FUNCREF:$1.$2/$3)
 $5    (HAS_EXTERNREF:$1.$2/$3)
@@ -252,7 +278,10 @@ $5    (HAS_GLOBAL:$1.$2/$3)
 $5)`)
     .replaceAll(/\(block\s+\$(.*)\.(.[^\.]*)\/(value)(\s+)\n(\s+)/gm, `(block $$$1.$2
 $5(local.set [LEVEL:$1.$2]
-$5    (call $eget (local.get [LEVEL:$1]) (text "$2"))
+$5    (call $eget 
+$5        (local.get [LEVEL:$1]) 
+$5        (text "$2")
+$5    )
 $5)
 $5(HAS_FUNCREF:$1.$2/$3)
 $5(HAS_EXTERNREF:$1.$2/$3)
@@ -284,13 +313,15 @@ blocks_wat = blocks_wat
 
 
 Array.from(blocks_wat.matchAll(/\[LEVEL\:(.*)\]/g)).forEach(m => {
-    blocks_wat = blocks_wat.replaceAll(m[0], m[1].split(".").length)
+    blocks_wat = blocks_wat.replaceAll(m[0], m[1].split(".").length-1)
 });
+
+let bounds_wat = ``;
 
 blocks_wat.matchAll(/\n(\s+)\[FUNCREF\:(.*)\]/g).forEach((m,i) => {    
     const fullpath = m[2];
     const signature = signatures.get(fullpath) || `(param) (result)`; 
-    const level = fullpath.split(".").length;
+    const level = fullpath.split(".").length-1;
     max_level = Math.max(level, max_level);
 
     const func_index = funcref_count++;
@@ -315,7 +346,7 @@ ${m[1]})`;
 
 blocks_wat.matchAll(/\n(\s+)\[EXTERNREF\:(.*)\]/g).forEach((m,i) => {
     const fullpath = m[2];
-    const level = fullpath.split(".").length;
+    const level = fullpath.split(".").length-1;
     max_level = Math.max(level, max_level);
 
     const ref_index = ref_count++;
@@ -325,7 +356,7 @@ blocks_wat.matchAll(/\n(\s+)\[EXTERNREF\:(.*)\]/g).forEach((m,i) => {
     const setter = (`
 
 ${m[1]}(call $eset 
-${m[1]}    (local.get $externref) 
+${m[1]}    (global.get $externref) 
 ${m[1]}    (i32.const ${ref_index}) 
 ${m[1]}    (local.get ${level})
 ${m[1]})`
@@ -340,158 +371,6 @@ ${m[1]})`
 
 let text_block = ``;
 
-Array.from(wat.matchAll(/\((text|string|char)\s+\"(.[^\"]*)\"\)/gm)).forEach(m => {
-    delete m.groups;
-    delete m.input;
-
-    m.block = wat.blockAt(m.index);
-    m.text = m[2];
-
-    m.offset = text_data.indexOf(m.text);
-    m.length = m.text.length;
-
-    if (-1 === m.offset) {
-        m.offset = text_data.length;
-        text_data = text_data + m.text;
-        
-        m.extern_index = externref_count++;
-        m.text_index = text_count++;
-        m.preview = m.text.substring(0, 17).concat( m.length > 17 && ".." || "" );
-
-        text_interset_wat = text_interset_wat.concat(`
-    (import "2" "${m.text_index}" (global (; "${m.preview}" ;) externref))`);
-    
-    externref_elements = externref_elements.concat(` (global.get ${m.extern_index})`);
-
-    text_block = `
-        ${text_block}
-
-        (block (; "${m.preview}" ;)
-            (local.set $arguments (call $array))
-            (local.set $length (i32.const ${m.length}))
-            (local.set $offset (i32.const ${m.offset}))
-
-            (loop $charCodeAt
-                (if (local.tee $length (i32.sub (local.get $length) (i32.const 1)))
-                    (then
-                        (call $iset 
-                            (local.get $arguments)
-                            (local.get $length)
-                            (i32.load8_u (i32.add (i32.const ${m.offset}) (local.get $length)))
-                        )
-
-                        (br $charCodeAt)
-                    )
-                )
-            )
-
-            (call $eset 
-                (local.get $texts) 
-                (i32.const ${m.text_index}) 
-                (call $apply 
-                    (global.get $strf) 
-                    (ref.null extern) 
-                    (local.get $arguments)
-                )
-            )
-        )`
-    }
-
-    matches.push(m)
-});
-
-
-Array.from(blocks_wat.matchAll(/\((text|string|char)\s+\"(.[^\"]*)\"\)/gm)).map(m => {
-    delete m.groups;
-    delete m.input;
-
-    m.block = blocks_wat.blockAt(m.index);
-    m.text = m[2];
-
-    m.offset = text_data.indexOf(m.text);
-    m.length = m.text.length;
-
-    if (-1 === m.offset) {
-        m.offset = text_data.length;
-        text_data = text_data + m.text;
-        
-        m.extern_index = externref_count++;
-        m.text_index = text_count++;
-        m.preview = m.text.substring(0, 17).concat( m.length > 17 && ".." || "" );
-
-        text_interset_wat = text_interset_wat.concat(`
-    (import "2" "${m.text_index}" (global (; "${m.preview}" ;) externref))`);
-    
-    externref_elements = externref_elements.concat(` (global.get ${m.extern_index})`);
-
-    text_block = `
-        ${text_block}
-
-        (block (; "${m.preview}" ;)
-            (local.set $arguments (call $array))
-            (local.set $length (i32.const ${m.length}))
-            (local.set $offset (i32.const ${m.offset}))
-
-            (loop $charCodeAt
-                (if (local.tee $length (i32.sub (local.get $length) (i32.const 1)))
-                    (then
-                        (call $iset 
-                            (local.get $arguments)
-                            (local.get $length)
-                            (i32.load8_u (i32.add (i32.const ${m.offset}) (local.get $length)))
-                        )
-
-                        (br $charCodeAt)
-                    )
-                )
-            )
-
-            (call $eset 
-                (local.get $texts) 
-                (i32.const ${m.text_index}) 
-                (call $apply 
-                    (global.get $strf) 
-                    (ref.null extern) 
-                    (local.get $arguments)
-                )
-            )
-        )`;
-    }
-    return m;
-
-}).filter(m => !isNaN(m.text_index)).forEach(m => {
-    blocks_wat = blocks_wat.replaceAll(
-        m.block, `(call $iget (local.get $texts) (i32.const ${m.text_index}))`
-    )
-});
-
-
-interset_wat = String(`
-(module
-    ${func_interset_wat.trimStart()}
-    ${ref_interset_wat.trimStart()}
-    ${text_interset_wat.trimStart()}
-    
-    (table (;0;) (export "funcref") ${funcref_count} 65536 funcref)
-    (table (;1;) (export "externref") ${externref_count} 65536 externref)
-
-    (elem (table 0) (i32.const 0) funcref ${funcref_elements.trim()})
-    (elem (table 1) (i32.const 0) externref ${externref_elements.trim()})
-)
-`).trim();
-
-fs.writeFileSync("/tmp/interset.wat", interset_wat)
-cp.execSync(`wat2wasm /tmp/interset.wat --enable-threads --enable-function-references -o /tmp/interset.wasm`)
-cp.execSync(`wat2wasm /tmp/interset.wat --enable-threads --enable-function-references `)
-const interset_wasm = fs.readFileSync("/tmp/interset.wasm", "hex").replaceAll(/(..)/g, `\\$1`);
-fs.unlinkSync("/tmp/interset.wasm")
-fs.writeFileSync("interset.wat", interset_wat)
-
-blocks_wat = blocks_wat
-    .replace(/\/value/g, ``)
-    ;
-
-blocks_wat = blocks_wat.split("\n").join("\n      ")
 
 let wat2 = wat;
 
@@ -531,119 +410,525 @@ matches.sort((b,a) => a.index - b.index).forEach(m => {
     else
     if (tag === "ref.extern") 
     {
-        content = `(table.get $externref (i32.const ${m.extern_index}))`
+        content = `(table.get $externref (i32.const ${m.extern_index})) (; "${m.fullpath}" ;)`
+        blocks_wat = blocks_wat.replaceAll(
+            m.block, `(table.get $externref (i32.const ${m.extern_index})) (; "${m.fullpath}" ;)`
+        )
     }
     else
     if (tag === "text") 
     {
-        content = `(table.get $externref (i32.const ${m.extern_index}))`
+        content = `(table.get $externref (i32.const ${m.extern_index})) (; "${m.fullpath}" ;)`
     }
 
     wat2 = before.concat(content).concat(after);
 });
 
+
+const text_block_matches = Array.from(
+    wat2.concat(blocks_wat).concat(`
+        (text "bind")    
+        (text "call")    
+        (text "WebAssembly")    
+        (text "instantiate")    
+        (text "compile")    
+        (text "exports")    
+        (text "Uint8Array")    
+        (text "construct")    
+        (text "Reflect")    
+        (text "Promise")    
+        (text "prototype")    
+        (text "instance")    
+        (text "then")    
+        (text "wasm")    
+    `).matchAll(/\((text|string|char)\s+\"(.[^\"]*)\"\)/gm)
+);
+
+const text_block_contents = new Map();
+const text_block_offsets = new Map();
+let text_blocks_buffer = new Array();
+
+text_block_matches.sort((a, b) => b[2].length - a[2].length)
+text_block_matches.map(m => {
+
+    m.block = m.input.blockAt(m.index);
+    m.text = m[2];
+    
+    const encodedTextBuffer = m.text.encode();
+
+    m.offset = text_blocks_buffer.findIndex((v,i,t) => {
+        encodedTextBuffer.every((e,j) => t.at(i+j) === e)
+    });    
+
+    if (-1 === m.offset) {
+        m.offset = text_blocks_buffer.length;
+        m.length = encodedTextBuffer.length;
+
+        text_blocks_buffer.push.apply(text_blocks_buffer, encodedTextBuffer)
+        
+        m.extern_index = externref_count++;
+        m.text_index = text_count++;
+
+        m.preview = m.text.substring(0, 17).concat( m.length > 17 && ".." || "" );
+
+        text_interset_wat = text_interset_wat.concat(`
+    (import "2" "${m.text_index}" (global (; "${m.preview}" ;) externref))`);
+    
+    externref_elements = externref_elements.concat(` (global.get ${m.extern_index})`);
+
+    text_block = `
+        (block $decode/${m.text_index} (; $texts[${m.text_index}] = "${m.preview}" ;)
+            (local.set $point_idx   (i32.const 0))
+            (local.set $cursor      (i32.const 0)) 
+            (local.set $end         (i32.const ${m.length})) 
+            (local.set $length      (i32.const 0)) 
+
+            (loop $codePointAt
+                (if (i32.lt_u (local.get $length) (local.get $end))
+                    (then
+                        (local.set $cursor (i32.add (local.get $length) (i32.const ${m.offset})))
+                        (local.set $code_point (i32.load8_u (local.get $cursor)))
+
+                        (if (i32.eq (local.get $code_point) (i32.const 128))
+                            (then                            
+                                (local.set $code_point  (i32.load offset=1 (local.get $cursor)))
+                                (local.set $length      (i32.add (local.get $length) (i32.const 4)))
+                            )
+                        )
+
+                        (local.set $length (i32.add (local.get $length) (i32.const 1)))
+
+                        (call $iset 
+                            (local.get $args) 
+                            (local.get $point_idx) 
+                            (local.get $code_point)
+                        )
+
+                        (local.set $point_idx (i32.add (local.get $point_idx) (i32.const 1)))
+
+                        (br $codePointAt)
+                    ) 
+                )
+            )
+
+            (call $eset 
+                (global.get $texts) 
+                (i32.const ${m.text_index}) 
+                (call $apply (global.get $strf) (ref.null extern) (local.get $args))
+            )
+        )
+
+        ${text_block}
+        `
+        
+        text_block_offsets.set(m.offset, m)
+        matches.push(m)
+    }
+    
+    text_block_contents.set(m.block, m.offset)
+});
+
+text_block_contents.forEach((text_data_offset) => {
+    const m = text_block_offsets.get(text_data_offset);
+
+    wat2 = wat2.replaceAll(
+        m.block, `(table.get $externref (i32.const ${m.extern_index})) (; "${m.preview}" ;)`
+    );
+
+    blocks_wat = blocks_wat.replaceAll(
+        m.block, String(`(call $iget (global.get $texts) (i32.const ${m.text_index}))`)
+    );
+});
+
+
+blocks_wat = blocks_wat.replace(`(block $self`, `(block $self
+    (local.set 0 (global.get $self))`)
+
+
+interset_wat = String(`
+(module
+    ${func_interset_wat.trimStart()}
+    ${ref_interset_wat.trimStart()}
+    ${text_interset_wat.trimStart()}
+    
+    (table (;0;) (export "funcref") ${funcref_count} 65536 funcref)
+    (table (;1;) (export "externref") ${externref_count} 65536 externref)
+
+    (elem (table 0) (i32.const 0) funcref ${funcref_elements.trim()})
+    (elem (table 1) (i32.const 0) externref ${externref_elements.trim()})
+)
+`).trim();
+
+fs.writeFileSync("/tmp/interset.wat", interset_wat)
+cp.execSync(`wat2wasm /tmp/interset.wat --enable-threads --debug-names -o /tmp/interset.wasm`)
+cp.execSync(`wat2wasm /tmp/interset.wat --enable-threads --debug-names `)
+const interset_wasm = fs.readFileSync("/tmp/interset.wasm", "hex").replaceAll(/(..)/g, `\\$1`);
+fs.unlinkSync("/tmp/interset.wasm")
+fs.writeFileSync("interset.wat", interset_wat)
+
+blocks_wat = blocks_wat.replace(/\/value/g, ``);
+blocks_wat = blocks_wat.split("\n").join("\n      ")
+
+
 const imports_begin = wat2.indexOf("(module") + ("(module".length) + 1; 
 wat2 = String(`(module
-    (import "0" "funcref" (table $funcref ${funcref_count} 65536 funcref))
-    (import "0" "externref" (table $externref ${externref_count} 65536 externref))
-\n`).concat(wat2.substring(imports_begin));
+    (import "wasm" "funcref" (table $funcref ${funcref_count} 65536 funcref))
+    (import "wasm" "externref" (table $externref ${externref_count} 65536 externref))
+\n`).concat(wat2.substring(imports_begin))
+    .replaceAll("(self)", `(table.get $externref (i32.const 0))`)
+    .replaceAll("(null)", `(ref.null extern)`)
+    .replaceAll("(void)", `(ref.null func)`)
+    .replaceAll("(this)", `(local.get 0)`)
+    .replaceAll(/\(start\s+(\$.[^\s]*)(\s*)\)/gm, `(smask $1$2)`)
+    .replaceAll(/\(start\s+(\$.[^\s]*)/gm, `(start $1)\n\n\t(func $1\n`)
+    .replaceAll(`(smask `, `(start`)
+    ;
 
 fs.writeFileSync("directed.wat", wat2)
 
 fs.writeFileSync("/tmp/directed.wat", wat2)
-cp.execSync(`wat2wasm /tmp/directed.wat --enable-threads -o /tmp/directed.wasm`)
+cp.execSync(`wat2wasm /tmp/directed.wat --enable-threads --debug-names -o /tmp/directed.wasm`)
 cp.execSync(`wat2wasm /tmp/directed.wat --enable-threads `)
 const directed_wasm = fs.readFileSync("/tmp/directed.wasm", "hex").replaceAll(/(..)/g, `\\$1`);
 fs.unlinkSync("/tmp/directed.wasm")
 
 
-
+const find_text_index = str => text_block_offsets.get(text_block_contents.get(`(text "${str}")`)).text_index;
+const $call_iget_text = str => `(call $iget (global.get $texts) (i32.const ${find_text_index(str)}))`;
 
 const locals = new Array(max_level+1).fill(`externref`).join(` `);
 
 const wat4 = `
 (module
-    (import "self" "self" (global $self externref))
-    (import "self" "Array" (func $array (param) (result externref)))
-    (import "Reflect" "get" (func $eget (param externref externref) (result externref)))
-    (import "Reflect" "get" (func $iget (param externref i32) (result externref)))
-    (import "Reflect" "set" (func $eset (param externref i32 externref) (result)))
-    (import "Reflect" "set" (func $iset (param externref i32 i32) (result)))
-    (import "Reflect" "set" (func $fset (param externref i32 funcref) (result)))
-    (import "Reflect" "apply" (func $apply (param externref externref externref) (result externref)))
-    (import "Reflect" "getOwnPropertyDescriptor" (func $desc (param externref externref) (result externref)))
-    (import "String" "fromCharCode" (global $strf externref))
+    (import "self" "self"                           (global $self externref))
+    (import "String" "fromCodePoint"                (global $strf externref))
+    (import "Reflect" "getOwnPropertyDescriptor"    (func $desc (param externref externref) (result externref)))
+    (import "Reflect" "get"                         (func $eget (param externref externref) (result externref)))
+    (import "Reflect" "get"                         (func $iget (param externref i32) (result externref)))
+    (import "Reflect" "set"                         (func $tset (param externref externref externref)))
+    (import "Reflect" "set"                         (func $eset (param externref i32 externref)))
+    (import "Reflect" "set"                         (func $fset (param externref i32 funcref)))
+    (import "Reflect" "set"                         (func $iset (param externref i32 i32)))
+    (import "Reflect" "apply"                       (func $apply (param externref externref externref) (result externref)))
+    (import "self" "Array"                          (func $array (result externref)))
+    (import "console" "log"                          (func $log (param externref)))
+
+    (global $texts (mut externref) (ref.null extern))
+    (global $externref (mut externref) (ref.null extern))
 
     (memory 1)
 
     (func $main
         (local ${locals})
-        (local $funcref externref)
-        (local $externref externref)
-        (local $imports externref)
-        (local $texts externref)
-        (local $string externref)
-        (local $arguments externref)
-        (local $index i32)
-        (local $offset i32)
-        (local $length i32)
+        (local $funcref      externref)
+        (local $imports      externref)
+        (local $args         externref)
+        (local $cursor       i32)
+        (local $length       i32)
+        (local $end          i32)
+        (local $point_idx    i32)
+        (local $func_idx     i32)
+        (local $code_point   i32)
+        (local $temp         externref)
+        (local $interset.wasm externref)
+        (local $directed.wasm externref)
 
-        (local.set $funcref     (call $array))
-        (local.set $externref   (call $array))
-        (local.set $imports     (call $array))
-        (local.set $texts       (call $array))
+        (block $create_local_variables
+            (local.set $funcref     (call $array))
+            (global.set $externref  (call $array))
+            (local.set $imports     (call $array))
+            (global.set $texts      (call $array))
 
-        (call $eset (local.get $imports) (i32.const 0) (local.get $funcref))
-        (call $eset (local.get $imports) (i32.const 1) (local.get $externref))
-        (call $eset (local.get $imports) (i32.const 2) (local.get $texts))
+            (call $eset (local.get $imports) (i32.const 0) (local.get $funcref))
+            (call $eset (local.get $imports) (i32.const 1) (global.get $externref))
+            (call $eset (local.get $imports) (i32.const 2) (global.get $texts))
 
-        (call $fset (local.get $funcref) (i32.const 0) (ref.null func))
-        (call $eset (local.get $externref) (i32.const 0) (ref.null extern))
+            (call $fset (local.get $funcref)   (i32.const 0) (ref.null func))
+            (call $eset (global.get $externref) (i32.const 0) (global.get $self))
+        )
 
-        |-------------------------------------------------------------------
-        |                                                                  |
-        |       (blocks ...)' || blocks_wat.trimStart()}                   |
-        |                                                                  |
-        |       (call $apply                                               |
-        |           (local.get $WebAssembly.instantiate)                   |
-        |           (data.view $export.wasm)                               |
-        |           (local.get $imports)                                   |
-        |       )                                                          |
-        |       (then $onwasmready                                         |
-        |           (param $instance   <Object>)                           |
-        |           (result           <Promise>)                           |
-        |                                                                  |
-        |           (call $apply                                           |
-        |               (local.get $WebAssembly.instantiate)               |
-        |               (data.view $module.wasm)                           |
-        |               (call $eget (local.get 0) (text "exports"))         |
-        |           )                                                      |
-        |       )                                                          |
-        |       (then $onmoduleready                                       |
-        |           (param $instance   <Object>)                           |
-        |                                                                  |
-        |               at                                                 |
-        |                  this                                            |
-        |                       point                                      |
-        |                  done                                            |
-        |               is                                                 |
-        |                                                                  |
-        |           -> TRANSFERABLE_ITEMS: memory + text                   |
-        |           -> ASSIGN_PER_PROCESS: extern + func                   |
-        |       )                                                          |
-        |                                                                  |
-        |------------------------------------------------------------------|
+        (block $decode_string_literals
+            (local.set $args (call $array))
+            
+            ${text_block.trim()}
+
+            (memory.fill (i32.const 0) (i32.const 0) (i32.const ${text_blocks_buffer.length}))
+            (data.drop $text)
+        )
+
+        (block $settle_externref_items
+            (local.set $args (call $array))
+            
+            ${blocks_wat.trim()}
+        )
+
+        (block $caller_bound_functions
         
-        ${text_block}
-        ${blocks_wat}
+            (br_if $caller_bound_functions 
+                (i32.const ${funcref_count})
+                (i32.eqz (local.tee $func_idx))
+            )
+
+            (local.set $args (call $array))
+
+            (local.set 0
+                (call $eget
+                    (global.get $strf)
+                    ${$call_iget_text('bind')}
+                )
+            )
+
+            (local.set 1
+                (call $eget 
+                    (global.get $strf)
+                    ${$call_iget_text('call')}
+                )
+            )
+
+            (loop $binding
+                (local.set $func_idx (i32.sub (local.get $func_idx) (i32.const 1)))
+
+                (call $eset 
+                    (local.get $args) 
+                    (i32.const 0) 
+                    (call $iget (local.get $funcref) (local.get $func_idx))
+                )
+                
+                (call $eset 
+                    (local.get $funcref) 
+                    (local.get $func_idx)
+                    (call $apply
+                        (local.get 0) 
+                        (local.get 1) 
+                        (local.get $args)
+                    )
+                )
+
+                (br_if $binding (local.get $func_idx))
+            )
+        )
+
+        (block $cloning_wasm_source
+            (local.set $args (call $array))
+
+            (local.set 0 ${$call_iget_text('Reflect')})
+            (local.set 0 (call $eget (global.get $self) (local.get 0)))
+
+            (local.set 1 ${$call_iget_text('construct')})
+            (local.set 1 (call $eget (local.get 0) (local.get 1)))
+
+            (local.set 2 ${$call_iget_text('Uint8Array')})
+            (local.set 2 (call $eget (global.get $self) (local.get 2)))
+            
+            (call $eset (local.get $args) (i32.const 0) (local.get 2) )
+
+            (local.set $cursor (i32.const ${interset_wasm.length/3}))
+            (memory.init $interset_wasm (i32.const 0) (i32.const 0) (local.get $cursor))
+            (data.drop $interset_wasm)
+
+            (call $eset (local.get $args) (i32.const 1) (local.tee 3 (call $array)))
+            (call $iset (local.get 3) (i32.const 0) (local.get $cursor))
+            
+            (local.set 4 (call $apply (local.get 1) (local.get 0) (local.get $args)))
+
+            (loop $bufferize 
+                (if (local.tee $cursor (i32.sub (local.get $cursor) (i32.const 1)))
+                    (then
+                        (call $iset
+                            (local.get 4)
+                            (local.get $cursor)
+                            (i32.load8_u (local.get $cursor))
+                        )
+
+                        (br $bufferize)
+                    )
+                )
+            )
+
+            (local.set $args (call $array))
+
+            (call $eset 
+                (local.get $args) 
+                (i32.const 0) 
+                (local.get 4)
+            )
+
+            (call $eset 
+                (local.get $args) 
+                (i32.const 1) 
+                (local.get $imports)
+            )
+            
+            (local.set 0 (call $eget (global.get $self) ${$call_iget_text('WebAssembly')}))
+            (local.set 1 (call $eget (local.get 0) ${$call_iget_text('instantiate')}))
+
+            (local.set 2 ${$call_iget_text('Promise')})
+            (local.set 2 (call $eget (global.get $self) (local.get 2)))
+
+            (local.set 3 (call $eget (local.get 2) ${$call_iget_text('prototype')}))
+            (local.set 3 (call $eget (local.get 3) ${$call_iget_text('then')}))
+
+            (call $fset
+                (local.tee 4 (call $array))
+                (i32.const 0) 
+                (ref.func $oninstersetinstance)
+            )
+            
+            (call $apply 
+                (local.get 3)
+                (call $apply (local.get 1) (ref.null extern) (local.get $args))
+                (local.get 4)
+            )
+
+            (drop)
+        )
     )
 
-    (data $str_charcodes (i32.const 0) "${Buffer.from(text_data).toString('hex').replaceAll(/(..)/g, `\\$1`)}")
-    (data $directed_wasm "${directed_wasm}")
+    (elem funcref (ref.func $oninstersetinstance) (ref.func $ondirectedinstance))
+
+    (func $ondirectedinstance
+        (param $exports externref)
+        (local.get 0)
+        (call $eget ${$call_iget_text('instance')})
+        (call $log)
+    )
+
+    (func $oninstersetinstance
+        (param $exports externref)
+        (param $instantiate externref)
+        (param $arguments externref)
+        (param $Uint8Array externref)
+        (param $construct externref)
+        (param $arrayargs externref)
+        (param $source externref)
+        (param $then externref)
+        (param $callbackargs externref)
+        (param $cursor i32)
+
+        (local.set $instantiate 
+            (global.get $self) 
+            (call $eget ${$call_iget_text('WebAssembly')})
+            (call $eget ${$call_iget_text('instantiate')})
+        )
+
+        (local.set $construct 
+            (global.get $self) 
+            (call $eget ${$call_iget_text('Reflect')})
+            (call $eget ${$call_iget_text('construct')})
+        )
+
+        (local.set $Uint8Array 
+            (global.get $self) 
+            (call $eget ${$call_iget_text('Uint8Array')})
+        )
+
+        (local.set $cursor   (i32.const ${directed_wasm.length/3}))
+        (local.set $exports  (call $eget (local.get $exports) ${$call_iget_text('instance')}))
+        (local.set $exports  (call $eget (local.get $exports) ${$call_iget_text('exports')}))
+
+        (call $tset (global.get $self) ${$call_iget_text('wasm')} (local.get $exports))
+
+        (memory.init $directed_wasm (i32.const 0) (i32.const 0) (local.get $cursor))
+        (data.drop $directed_wasm)
+
+        (local.set $arrayargs (call $array))
+        (local.set $arguments (call $array))
+
+        (call $iset (local.get $arrayargs) (i32.const 0) (local.get $cursor))
+        (call $eset (local.get $arguments) (i32.const 0) (local.get $Uint8Array))
+        (call $eset (local.get $arguments) (i32.const 1) (local.get $arrayargs))
+
+        (local.set $source
+            (call $apply
+                (local.get $construct)
+                (ref.null extern)
+                (local.get $arguments)
+            )
+        )
+
+        (loop $bufferize 
+            (if (local.tee $cursor (i32.sub (local.get $cursor) (i32.const 1)))
+                (then
+                    (call $iset
+                        (local.get $source)
+                        (local.get $cursor)
+                        (i32.load8_u (local.get $cursor))
+                    )
+
+                    (br $bufferize)
+                )
+            )
+        )
+
+        (local.set $then
+            (global.get $self)
+            (call $eget ${$call_iget_text('Promise')})
+            (call $eget ${$call_iget_text('prototype')}) 
+            (call $eget ${$call_iget_text('then')})
+        )        
+
+        (local.set $arguments (call $array))
+        (call $eset (local.get $arguments) (i32.const 0) (local.get $source))
+        (call $eset (local.get $arguments) (i32.const 1) (global.get $self))
+
+        (local.set $instantiate
+            (call $apply 
+                (local.get $instantiate) 
+                (ref.null extern) 
+                (local.get $arguments)
+            )
+        )
+
+        (call $fset 
+            (local.tee $callbackargs (call $array))
+            (i32.const 0) 
+            (ref.func $ondirectedinstance)
+        )
+
+        (call $apply
+            (local.get $then)
+            (local.get $instantiate)
+            (local.get $callbackargs)
+        )
+
+        (drop)        
+    )
+
+    (data $text (i32.const 0) "${Buffer.from( Uint8Array.from(text_blocks_buffer).buffer ).toString('hex').replaceAll(/(..)/g, `\\$1`)}")
     (data $interset_wasm "${interset_wasm}")
+    (data $directed_wasm "${directed_wasm}")
 
     (start $main)
 )`; 
 
+let opener = 0;
+let closer = 0;
+let trimedLine, padding, padlen;
+const _wat4 = wat4.split(/\n/).map(line => {
+    if (trimedLine = line.trim()) {
+        
+        switch (trimedLine.at(0)) {
+            case "(":
+                padlen = 4 * (opener - closer);
+                padding = ` `.repeat(padlen);
+                line = padding.concat(trimedLine);
+            break;
 
-console.log(wat4)
+            case ")":
+                padlen = 4 * (opener - closer - 1);
+                padding = ` `.repeat(padlen);
+                line = padding.concat(trimedLine);
+            break;
+        }
+
+        opener += line.split("(").length;
+        closer += line.split(")").length;
+    }
+
+    return line;
+}).join("\n").replace(/\/value/g, ``);
+
+fs.writeFileSync("manipulated.wat", _wat4)
+fs.writeFileSync("/tmp/manipulated.wat", _wat4)
+cp.execSync(`wat2wasm /tmp/manipulated.wat --enable-threads --debug-names`)
+console.log(_wat4);

@@ -5,22 +5,10 @@
 
     //self.memory = new LocalSharedMemory(1, 65536, true);
 
-    self.wasm = {}
-    wasm[`MessageEvent:data[get]`] = Reflect.getOwnPropertyDescriptor( MessageEvent.prototype, "data" ).get;
+    self.wasm = {};
     
-    
-    WebAssembly.instantiateStreaming(fetch("wasm/m.wasm"), self).then(i => console.warn(i.instance));
-    WebAssembly.instantiateStreaming(fetch("src/interset.wasm"), [
-        [alert, confirm, prompt, atob],
-        [null, self, navigator],
-        ['str0', 'str1'],
-    ]).then(i => {
-        WebAssembly.instantiateStreaming(
-            fetch("src/directed.wasm"),
-            [i.instance.exports]
-        ).then(i => console.log(i))
-    });
-    
+    WebAssembly.instantiateStreaming(fetch("src/manipulated.wasm"), self);
+
 
     (async () => {
         
