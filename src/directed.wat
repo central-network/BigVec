@@ -1,8 +1,9 @@
 (module
     (import "wasm" "funcref" (table $funcref 4 65536 funcref))
-    (import "wasm" "externref" (table $externref 26 65536 externref))
+    (import "wasm" "externref" (table $externref 2 65536 externref))
+    (import "wasm" "textref" (table $textref 27 65536 externref))
 
-    (elem $funcs funcref
+    (elem funcref
         (ref.func $onmessage)
     )
 
@@ -10,7 +11,7 @@
         (param $event externref)
 
         (call_indirect $funcref
-            (param externref externref externref) 
+            (param externref externref externref externref) 
             (result)
 
             (ref.null extern)
@@ -22,7 +23,8 @@
                 (i32.const 2)
             )
 
-            (table.get $externref (i32.const 1)) (; "Özgür Fırat Özpol.." ;)
+            (table.get $textref (i32.const 0)) (; "Özgür Fırat Özpol.." ;)
+            (table.get $externref (i32.const 1)) (; "self.location.href/value" ;)
             (i32.const 1)
         )
 
@@ -37,7 +39,7 @@
             (result)
 
             (table.get $externref (i32.const 0))
-            (table.get $externref (i32.const 13)) (; "message" ;)
+            (table.get $textref (i32.const 13)) (; "message" ;)
             (ref.func $onmessage)
             (i32.const 3)
         )

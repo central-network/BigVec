@@ -1,5 +1,5 @@
 (module
-    (elem $funcs funcref
+    (elem funcref
         (ref.func $onmessage)
     )
 
@@ -7,7 +7,7 @@
         (param $event externref)
 
         (call_direct $console.warn
-            (param externref externref externref) 
+            (param externref externref externref externref) 
             (result)
 
             (ref.null extern)
@@ -18,6 +18,7 @@
                 (local.get $event)
             )
             (text "Özgür Fırat Özpolat")
+            (ref.extern $location.href)
         )
     )
     

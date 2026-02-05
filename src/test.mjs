@@ -54,6 +54,7 @@ let externref_count = 1;
 let ref_count = 1;
 let funcref_elements = `(ref.func 0)`;
 let externref_elements = `(global.get 0)`;
+let textref_elements = ``;
 let max_level = 1;
 
 let func_interset_wat = `(import "0" "0" (func (; void ;) (param) (result)))`;
@@ -418,7 +419,7 @@ matches.sort((b,a) => a.index - b.index).forEach(m => {
     else
     if (tag === "text") 
     {
-        content = `(table.get $externref (i32.const ${m.extern_index})) (; "${m.fullpath}" ;)`
+        content = `(table.get $textref (i32.const ${m.text_index})) (; "${m.fullpath}" ;)`
     }
 
     wat2 = before.concat(content).concat(after);
@@ -474,7 +475,7 @@ text_block_matches.map(m => {
         text_interset_wat = text_interset_wat.concat(`
     (import "2" "${m.text_index}" (global (; "${m.preview}" ;) externref))`);
     
-    externref_elements = externref_elements.concat(` (global.get ${m.extern_index})`);
+    textref_elements = textref_elements.concat(` (global.get ${m.extern_index})`);
 
     text_block = `
         (block $decode/${m.text_index} (; $texts[${m.text_index}] = "${m.preview}" ;)
@@ -532,7 +533,7 @@ text_block_contents.forEach((text_data_offset) => {
     const m = text_block_offsets.get(text_data_offset);
 
     wat2 = wat2.replaceAll(
-        m.block, `(table.get $externref (i32.const ${m.extern_index})) (; "${m.preview}" ;)`
+        m.block, `(table.get $textref (i32.const ${m.text_index})) (; "${m.preview}" ;)`
     );
 
     blocks_wat = blocks_wat.replaceAll(
@@ -552,10 +553,12 @@ interset_wat = String(`
     ${text_interset_wat.trimStart()}
     
     (table (;0;) (export "funcref") ${funcref_count} 65536 funcref)
-    (table (;1;) (export "externref") ${externref_count} 65536 externref)
+    (table (;1;) (export "externref") ${ref_count} 65536 externref)
+    (table (;2;) (export "textref") ${text_count} 65536 externref)
 
     (elem (table 0) (i32.const 0) funcref ${funcref_elements.trim()})
     (elem (table 1) (i32.const 0) externref ${externref_elements.trim()})
+    (elem (table 2) (i32.const 0) externref ${textref_elements.trim()})
 )
 `).trim();
 
@@ -573,7 +576,8 @@ blocks_wat = blocks_wat.split("\n").join("\n      ")
 const imports_begin = wat2.indexOf("(module") + ("(module".length) + 1; 
 wat2 = String(`(module
     (import "wasm" "funcref" (table $funcref ${funcref_count} 65536 funcref))
-    (import "wasm" "externref" (table $externref ${externref_count} 65536 externref))
+    (import "wasm" "externref" (table $externref ${ref_count} 65536 externref))
+    (import "wasm" "textref" (table $textref ${text_count} 65536 externref))
 \n`).concat(wat2.substring(imports_begin))
     .replaceAll("(self)", `(table.get $externref (i32.const 0))`)
     .replaceAll("(null)", `(ref.null extern)`)

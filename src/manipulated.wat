@@ -50,7 +50,7 @@
         (block $decode_string_literals
             (local.set $args (call $array))
             
-            (block $decode/24 (; $texts[24] = "get" ;)
+            (block $decode/26 (; $texts[26] = "get" ;)
                 (local.set $point_idx   (i32.const 0))
                 (local.set $cursor      (i32.const 0))
                 (local.set $end         (i32.const 3))
@@ -59,7 +59,91 @@
                 (loop $codePointAt
                     (if (i32.lt_u (local.get $length) (local.get $end))
                         (then
-                            (local.set $cursor (i32.add (local.get $length) (i32.const 216)))
+                            (local.set $cursor (i32.add (local.get $length) (i32.const 228)))
+                            (local.set $code_point (i32.load8_u (local.get $cursor)))
+
+                            (if (i32.eq (local.get $code_point) (i32.const 128))
+                                (then
+                                    (local.set $code_point  (i32.load offset=1 (local.get $cursor)))
+                                    (local.set $length      (i32.add (local.get $length) (i32.const 4)))
+                                )
+                            )
+
+                            (local.set $length (i32.add (local.get $length) (i32.const 1)))
+
+                            (call $iset
+                                (local.get $args)
+                                (local.get $point_idx)
+                                (local.get $code_point)
+                            )
+
+                            (local.set $point_idx (i32.add (local.get $point_idx) (i32.const 1)))
+
+                            (br $codePointAt)
+                        )
+                    )
+                )
+
+                (call $eset
+                    (global.get $texts)
+                    (i32.const 26)
+                    (call $apply (global.get $strf) (ref.null extern) (local.get $args))
+                )
+            )
+
+        
+            (block $decode/25 (; $texts[25] = "wasm" ;)
+                (local.set $point_idx   (i32.const 0))
+                (local.set $cursor      (i32.const 0))
+                (local.set $end         (i32.const 4))
+                (local.set $length      (i32.const 0))
+
+                (loop $codePointAt
+                    (if (i32.lt_u (local.get $length) (local.get $end))
+                        (then
+                            (local.set $cursor (i32.add (local.get $length) (i32.const 224)))
+                            (local.set $code_point (i32.load8_u (local.get $cursor)))
+
+                            (if (i32.eq (local.get $code_point) (i32.const 128))
+                                (then
+                                    (local.set $code_point  (i32.load offset=1 (local.get $cursor)))
+                                    (local.set $length      (i32.add (local.get $length) (i32.const 4)))
+                                )
+                            )
+
+                            (local.set $length (i32.add (local.get $length) (i32.const 1)))
+
+                            (call $iset
+                                (local.get $args)
+                                (local.get $point_idx)
+                                (local.get $code_point)
+                            )
+
+                            (local.set $point_idx (i32.add (local.get $point_idx) (i32.const 1)))
+
+                            (br $codePointAt)
+                        )
+                    )
+                )
+
+                (call $eset
+                    (global.get $texts)
+                    (i32.const 25)
+                    (call $apply (global.get $strf) (ref.null extern) (local.get $args))
+                )
+            )
+
+        
+            (block $decode/24 (; $texts[24] = "then" ;)
+                (local.set $point_idx   (i32.const 0))
+                (local.set $cursor      (i32.const 0))
+                (local.set $end         (i32.const 4))
+                (local.set $length      (i32.const 0))
+
+                (loop $codePointAt
+                    (if (i32.lt_u (local.get $length) (local.get $end))
+                        (then
+                            (local.set $cursor (i32.add (local.get $length) (i32.const 220)))
                             (local.set $code_point (i32.load8_u (local.get $cursor)))
 
                             (if (i32.eq (local.get $code_point) (i32.const 128))
@@ -92,7 +176,49 @@
             )
 
         
-            (block $decode/23 (; $texts[23] = "wasm" ;)
+            (block $decode/23 (; $texts[23] = "call" ;)
+                (local.set $point_idx   (i32.const 0))
+                (local.set $cursor      (i32.const 0))
+                (local.set $end         (i32.const 4))
+                (local.set $length      (i32.const 0))
+
+                (loop $codePointAt
+                    (if (i32.lt_u (local.get $length) (local.get $end))
+                        (then
+                            (local.set $cursor (i32.add (local.get $length) (i32.const 216)))
+                            (local.set $code_point (i32.load8_u (local.get $cursor)))
+
+                            (if (i32.eq (local.get $code_point) (i32.const 128))
+                                (then
+                                    (local.set $code_point  (i32.load offset=1 (local.get $cursor)))
+                                    (local.set $length      (i32.add (local.get $length) (i32.const 4)))
+                                )
+                            )
+
+                            (local.set $length (i32.add (local.get $length) (i32.const 1)))
+
+                            (call $iset
+                                (local.get $args)
+                                (local.get $point_idx)
+                                (local.get $code_point)
+                            )
+
+                            (local.set $point_idx (i32.add (local.get $point_idx) (i32.const 1)))
+
+                            (br $codePointAt)
+                        )
+                    )
+                )
+
+                (call $eset
+                    (global.get $texts)
+                    (i32.const 23)
+                    (call $apply (global.get $strf) (ref.null extern) (local.get $args))
+                )
+            )
+
+        
+            (block $decode/22 (; $texts[22] = "bind" ;)
                 (local.set $point_idx   (i32.const 0))
                 (local.set $cursor      (i32.const 0))
                 (local.set $end         (i32.const 4))
@@ -128,13 +254,13 @@
 
                 (call $eset
                     (global.get $texts)
-                    (i32.const 23)
+                    (i32.const 22)
                     (call $apply (global.get $strf) (ref.null extern) (local.get $args))
                 )
             )
 
         
-            (block $decode/22 (; $texts[22] = "then" ;)
+            (block $decode/21 (; $texts[21] = "href" ;)
                 (local.set $point_idx   (i32.const 0))
                 (local.set $cursor      (i32.const 0))
                 (local.set $end         (i32.const 4))
@@ -170,13 +296,13 @@
 
                 (call $eset
                     (global.get $texts)
-                    (i32.const 22)
+                    (i32.const 21)
                     (call $apply (global.get $strf) (ref.null extern) (local.get $args))
                 )
             )
 
         
-            (block $decode/21 (; $texts[21] = "call" ;)
+            (block $decode/20 (; $texts[20] = "data" ;)
                 (local.set $point_idx   (i32.const 0))
                 (local.set $cursor      (i32.const 0))
                 (local.set $end         (i32.const 4))
@@ -212,13 +338,13 @@
 
                 (call $eset
                     (global.get $texts)
-                    (i32.const 21)
+                    (i32.const 20)
                     (call $apply (global.get $strf) (ref.null extern) (local.get $args))
                 )
             )
 
         
-            (block $decode/20 (; $texts[20] = "bind" ;)
+            (block $decode/19 (; $texts[19] = "warn" ;)
                 (local.set $point_idx   (i32.const 0))
                 (local.set $cursor      (i32.const 0))
                 (local.set $end         (i32.const 4))
@@ -254,64 +380,22 @@
 
                 (call $eset
                     (global.get $texts)
-                    (i32.const 20)
-                    (call $apply (global.get $strf) (ref.null extern) (local.get $args))
-                )
-            )
-
-        
-            (block $decode/19 (; $texts[19] = "data" ;)
-                (local.set $point_idx   (i32.const 0))
-                (local.set $cursor      (i32.const 0))
-                (local.set $end         (i32.const 4))
-                (local.set $length      (i32.const 0))
-
-                (loop $codePointAt
-                    (if (i32.lt_u (local.get $length) (local.get $end))
-                        (then
-                            (local.set $cursor (i32.add (local.get $length) (i32.const 196)))
-                            (local.set $code_point (i32.load8_u (local.get $cursor)))
-
-                            (if (i32.eq (local.get $code_point) (i32.const 128))
-                                (then
-                                    (local.set $code_point  (i32.load offset=1 (local.get $cursor)))
-                                    (local.set $length      (i32.add (local.get $length) (i32.const 4)))
-                                )
-                            )
-
-                            (local.set $length (i32.add (local.get $length) (i32.const 1)))
-
-                            (call $iset
-                                (local.get $args)
-                                (local.get $point_idx)
-                                (local.get $code_point)
-                            )
-
-                            (local.set $point_idx (i32.add (local.get $point_idx) (i32.const 1)))
-
-                            (br $codePointAt)
-                        )
-                    )
-                )
-
-                (call $eset
-                    (global.get $texts)
                     (i32.const 19)
                     (call $apply (global.get $strf) (ref.null extern) (local.get $args))
                 )
             )
 
         
-            (block $decode/18 (; $texts[18] = "warn" ;)
+            (block $decode/18 (; $texts[18] = "Promise" ;)
                 (local.set $point_idx   (i32.const 0))
                 (local.set $cursor      (i32.const 0))
-                (local.set $end         (i32.const 4))
+                (local.set $end         (i32.const 7))
                 (local.set $length      (i32.const 0))
 
                 (loop $codePointAt
                     (if (i32.lt_u (local.get $length) (local.get $end))
                         (then
-                            (local.set $cursor (i32.add (local.get $length) (i32.const 192)))
+                            (local.set $cursor (i32.add (local.get $length) (i32.const 193)))
                             (local.set $code_point (i32.load8_u (local.get $cursor)))
 
                             (if (i32.eq (local.get $code_point) (i32.const 128))
@@ -344,7 +428,7 @@
             )
 
         
-            (block $decode/17 (; $texts[17] = "Promise" ;)
+            (block $decode/17 (; $texts[17] = "Reflect" ;)
                 (local.set $point_idx   (i32.const 0))
                 (local.set $cursor      (i32.const 0))
                 (local.set $end         (i32.const 7))
@@ -353,7 +437,7 @@
                 (loop $codePointAt
                     (if (i32.lt_u (local.get $length) (local.get $end))
                         (then
-                            (local.set $cursor (i32.add (local.get $length) (i32.const 185)))
+                            (local.set $cursor (i32.add (local.get $length) (i32.const 186)))
                             (local.set $code_point (i32.load8_u (local.get $cursor)))
 
                             (if (i32.eq (local.get $code_point) (i32.const 128))
@@ -386,7 +470,7 @@
             )
 
         
-            (block $decode/16 (; $texts[16] = "Reflect" ;)
+            (block $decode/16 (; $texts[16] = "exports" ;)
                 (local.set $point_idx   (i32.const 0))
                 (local.set $cursor      (i32.const 0))
                 (local.set $end         (i32.const 7))
@@ -395,7 +479,7 @@
                 (loop $codePointAt
                     (if (i32.lt_u (local.get $length) (local.get $end))
                         (then
-                            (local.set $cursor (i32.add (local.get $length) (i32.const 178)))
+                            (local.set $cursor (i32.add (local.get $length) (i32.const 179)))
                             (local.set $code_point (i32.load8_u (local.get $cursor)))
 
                             (if (i32.eq (local.get $code_point) (i32.const 128))
@@ -428,7 +512,7 @@
             )
 
         
-            (block $decode/15 (; $texts[15] = "exports" ;)
+            (block $decode/15 (; $texts[15] = "compile" ;)
                 (local.set $point_idx   (i32.const 0))
                 (local.set $cursor      (i32.const 0))
                 (local.set $end         (i32.const 7))
@@ -437,7 +521,7 @@
                 (loop $codePointAt
                     (if (i32.lt_u (local.get $length) (local.get $end))
                         (then
-                            (local.set $cursor (i32.add (local.get $length) (i32.const 171)))
+                            (local.set $cursor (i32.add (local.get $length) (i32.const 172)))
                             (local.set $code_point (i32.load8_u (local.get $cursor)))
 
                             (if (i32.eq (local.get $code_point) (i32.const 128))
@@ -470,7 +554,7 @@
             )
 
         
-            (block $decode/14 (; $texts[14] = "compile" ;)
+            (block $decode/14 (; $texts[14] = "console" ;)
                 (local.set $point_idx   (i32.const 0))
                 (local.set $cursor      (i32.const 0))
                 (local.set $end         (i32.const 7))
@@ -479,7 +563,7 @@
                 (loop $codePointAt
                     (if (i32.lt_u (local.get $length) (local.get $end))
                         (then
-                            (local.set $cursor (i32.add (local.get $length) (i32.const 164)))
+                            (local.set $cursor (i32.add (local.get $length) (i32.const 165)))
                             (local.set $code_point (i32.load8_u (local.get $cursor)))
 
                             (if (i32.eq (local.get $code_point) (i32.const 128))
@@ -512,7 +596,7 @@
             )
 
         
-            (block $decode/13 (; $texts[13] = "console" ;)
+            (block $decode/13 (; $texts[13] = "message" ;)
                 (local.set $point_idx   (i32.const 0))
                 (local.set $cursor      (i32.const 0))
                 (local.set $end         (i32.const 7))
@@ -521,7 +605,7 @@
                 (loop $codePointAt
                     (if (i32.lt_u (local.get $length) (local.get $end))
                         (then
-                            (local.set $cursor (i32.add (local.get $length) (i32.const 157)))
+                            (local.set $cursor (i32.add (local.get $length) (i32.const 158)))
                             (local.set $code_point (i32.load8_u (local.get $cursor)))
 
                             (if (i32.eq (local.get $code_point) (i32.const 128))
@@ -554,10 +638,10 @@
             )
 
         
-            (block $decode/12 (; $texts[12] = "message" ;)
+            (block $decode/12 (; $texts[12] = "instance" ;)
                 (local.set $point_idx   (i32.const 0))
                 (local.set $cursor      (i32.const 0))
-                (local.set $end         (i32.const 7))
+                (local.set $end         (i32.const 8))
                 (local.set $length      (i32.const 0))
 
                 (loop $codePointAt
@@ -596,7 +680,7 @@
             )
 
         
-            (block $decode/11 (; $texts[11] = "instance" ;)
+            (block $decode/11 (; $texts[11] = "location" ;)
                 (local.set $point_idx   (i32.const 0))
                 (local.set $cursor      (i32.const 0))
                 (local.set $end         (i32.const 8))
@@ -1099,7 +1183,7 @@
                 )
             )
 
-            (memory.fill (i32.const 0) (i32.const 0) (i32.const 219))
+            (memory.fill (i32.const 0) (i32.const 0) (i32.const 231))
             (data.drop $text)
         )
 
@@ -1113,7 +1197,7 @@
                     (local.set 1
                         (call $eget
                             (local.get 0)
-                            (call $iget (global.get $texts) (i32.const 13))
+                            (call $iget (global.get $texts) (i32.const 14))
                         )
                     )
       
@@ -1121,7 +1205,7 @@
                         (local.set 2
                             (call $eget
                                 (local.get 1)
-                                (call $iget (global.get $texts) (i32.const 18))
+                                (call $iget (global.get $texts) (i32.const 19))
                             )
                         )
       
@@ -1152,8 +1236,8 @@
                         (block $self.MessageEvent.prototype.data/get
                             (local.set 3
                                 (call $eget
-                                    (call $desc (local.get 2) (call $iget (global.get $texts) (i32.const 19)))
-                                    (call $iget (global.get $texts) (i32.const 24))
+                                    (call $desc (local.get 2) (call $iget (global.get $texts) (i32.const 20)))
+                                    (call $iget (global.get $texts) (i32.const 26))
                                 )
                             )
       
@@ -1162,6 +1246,30 @@
                                 (i32.const 2)
                                 (local.get 3)
                             )
+                        )
+                    )
+                )
+      
+                (block $self.location
+                    (local.set 1
+                        (call $eget
+                            (local.get 0)
+                            (call $iget (global.get $texts) (i32.const 11))
+                        )
+                    )
+      
+                    (block $self.location.href
+                        (local.set 2
+                            (call $eget
+                                (local.get 1)
+                                (call $iget (global.get $texts) (i32.const 21))
+                            )
+                        )
+      
+                        (call $eset
+                            (global.get $externref)
+                            (i32.const 1)
+                            (local.get 2)
                         )
                     )
                 )
@@ -1213,14 +1321,14 @@
             (local.set 0
                 (call $eget
                     (global.get $strf)
-                    (call $iget (global.get $texts) (i32.const 20))
+                    (call $iget (global.get $texts) (i32.const 22))
                 )
             )
 
             (local.set 1
                 (call $eget
                     (global.get $strf)
-                    (call $iget (global.get $texts) (i32.const 21))
+                    (call $iget (global.get $texts) (i32.const 23))
                 )
             )
 
@@ -1250,7 +1358,7 @@
         (block $cloning_wasm_source
             (local.set $args (call $array))
 
-            (local.set 0 (call $iget (global.get $texts) (i32.const 16)))
+            (local.set 0 (call $iget (global.get $texts) (i32.const 17)))
             (local.set 0 (call $eget (global.get $self) (local.get 0)))
 
             (local.set 1 (call $iget (global.get $texts) (i32.const 9)))
@@ -1261,7 +1369,7 @@
             
             (call $eset (local.get $args) (i32.const 0) (local.get 2) )
 
-            (local.set $cursor (i32.const 411))
+            (local.set $cursor (i32.const 467))
             (memory.init $interset_wasm (i32.const 0) (i32.const 0) (local.get $cursor))
             (data.drop $interset_wasm)
 
@@ -1301,11 +1409,11 @@
             (local.set 0 (call $eget (global.get $self) (call $iget (global.get $texts) (i32.const 4))))
             (local.set 1 (call $eget (local.get 0) (call $iget (global.get $texts) (i32.const 5))))
 
-            (local.set 2 (call $iget (global.get $texts) (i32.const 17)))
+            (local.set 2 (call $iget (global.get $texts) (i32.const 18)))
             (local.set 2 (call $eget (global.get $self) (local.get 2)))
 
             (local.set 3 (call $eget (local.get 2) (call $iget (global.get $texts) (i32.const 10))))
-            (local.set 3 (call $eget (local.get 3) (call $iget (global.get $texts) (i32.const 22))))
+            (local.set 3 (call $eget (local.get 3) (call $iget (global.get $texts) (i32.const 24))))
 
             (call $fset
                 (local.tee 4 (call $array))
@@ -1328,7 +1436,7 @@
     (func $ondirectedinstance
         (param $exports externref)
         (local.get 0)
-        (call $eget (call $iget (global.get $texts) (i32.const 11)))
+        (call $eget (call $iget (global.get $texts) (i32.const 12)))
         (call $log)
     )
 
@@ -1352,7 +1460,7 @@
 
         (local.set $construct
             (global.get $self)
-            (call $eget (call $iget (global.get $texts) (i32.const 16)))
+            (call $eget (call $iget (global.get $texts) (i32.const 17)))
             (call $eget (call $iget (global.get $texts) (i32.const 9)))
         )
 
@@ -1361,11 +1469,11 @@
             (call $eget (call $iget (global.get $texts) (i32.const 6)))
         )
 
-        (local.set $cursor   (i32.const 211))
-        (local.set $exports  (call $eget (local.get $exports) (call $iget (global.get $texts) (i32.const 11))))
-        (local.set $exports  (call $eget (local.get $exports) (call $iget (global.get $texts) (i32.const 15))))
+        (local.set $cursor   (i32.const 235))
+        (local.set $exports  (call $eget (local.get $exports) (call $iget (global.get $texts) (i32.const 12))))
+        (local.set $exports  (call $eget (local.get $exports) (call $iget (global.get $texts) (i32.const 16))))
 
-        (call $tset (global.get $self) (call $iget (global.get $texts) (i32.const 23)) (local.get $exports))
+        (call $tset (global.get $self) (call $iget (global.get $texts) (i32.const 25)) (local.get $exports))
 
         (memory.init $directed_wasm (i32.const 0) (i32.const 0) (local.get $cursor))
         (data.drop $directed_wasm)
@@ -1401,9 +1509,9 @@
 
         (local.set $then
             (global.get $self)
-            (call $eget (call $iget (global.get $texts) (i32.const 17)))
+            (call $eget (call $iget (global.get $texts) (i32.const 18)))
             (call $eget (call $iget (global.get $texts) (i32.const 10)))
-            (call $eget (call $iget (global.get $texts) (i32.const 22)))
+            (call $eget (call $iget (global.get $texts) (i32.const 24)))
         )
 
         (local.set $arguments (call $array))
@@ -1433,9 +1541,9 @@
         (drop)
     )
 
-    (data $text (i32.const 0) "\80\d6\00\00\00\7a\67\80\fc\00\00\00\72\20\46\80\31\01\00\00\72\61\74\20\80\d6\00\00\00\7a\70\6f\6c\61\74\61\64\64\45\76\65\6e\74\4c\69\73\74\65\6e\65\72\4d\65\73\73\61\67\65\45\76\65\6e\74\45\76\65\6e\74\54\61\72\67\65\74\57\65\62\41\73\73\65\6d\62\6c\79\69\6e\73\74\61\6e\74\69\61\74\65\55\69\6e\74\38\41\72\72\61\79\70\72\6f\74\6f\74\79\70\65\70\72\6f\74\6f\74\79\70\65\63\6f\6e\73\74\72\75\63\74\70\72\6f\74\6f\74\79\70\65\69\6e\73\74\61\6e\63\65\6d\65\73\73\61\67\65\63\6f\6e\73\6f\6c\65\63\6f\6d\70\69\6c\65\65\78\70\6f\72\74\73\52\65\66\6c\65\63\74\50\72\6f\6d\69\73\65\77\61\72\6e\64\61\74\61\62\69\6e\64\63\61\6c\6c\74\68\65\6e\77\61\73\6d\67\65\74")
-    (data $interset_wasm "\00\61\73\6d\01\00\00\00\01\15\04\60\00\00\60\03\6f\6f\6f\00\60\01\6f\01\6f\60\03\6f\6f\70\00\02\de\01\1e\01\30\01\30\00\00\01\30\01\31\00\01\01\30\01\32\00\02\01\30\01\33\00\03\01\31\01\30\03\6f\00\01\32\01\30\03\6f\00\01\32\01\31\03\6f\00\01\32\01\32\03\6f\00\01\32\01\33\03\6f\00\01\32\01\34\03\6f\00\01\32\01\35\03\6f\00\01\32\01\36\03\6f\00\01\32\01\37\03\6f\00\01\32\01\38\03\6f\00\01\32\01\39\03\6f\00\01\32\02\31\30\03\6f\00\01\32\02\31\31\03\6f\00\01\32\02\31\32\03\6f\00\01\32\02\31\33\03\6f\00\01\32\02\31\34\03\6f\00\01\32\02\31\35\03\6f\00\01\32\02\31\36\03\6f\00\01\32\02\31\37\03\6f\00\01\32\02\31\38\03\6f\00\01\32\02\31\39\03\6f\00\01\32\02\32\30\03\6f\00\01\32\02\32\31\03\6f\00\01\32\02\32\32\03\6f\00\01\32\02\32\33\03\6f\00\01\32\02\32\34\03\6f\00\04\0d\02\70\01\04\80\80\04\6f\01\1a\80\80\04\07\17\02\07\66\75\6e\63\72\65\66\01\00\09\65\78\74\65\72\6e\72\65\66\01\01\09\5f\02\00\41\00\0b\04\00\01\02\03\06\01\41\00\0b\6f\1a\23\00\0b\23\01\0b\23\02\0b\23\03\0b\23\04\0b\23\05\0b\23\06\0b\23\07\0b\23\08\0b\23\09\0b\23\0a\0b\23\0b\0b\23\0c\0b\23\0d\0b\23\0e\0b\23\0f\0b\23\10\0b\23\11\0b\23\12\0b\23\13\0b\23\14\0b\23\15\0b\23\16\0b\23\17\0b\23\18\0b\23\19\0b\00\10\04\6e\61\6d\65\02\09\04\00\00\01\00\02\00\03\00")
-    (data $directed_wasm "\00\61\73\6d\01\00\00\00\01\19\05\60\01\6f\00\60\01\6f\01\6f\60\03\6f\6f\6f\00\60\00\00\60\03\6f\6f\70\00\02\2b\02\04\77\61\73\6d\07\66\75\6e\63\72\65\66\01\70\01\04\80\80\04\04\77\61\73\6d\09\65\78\74\65\72\6e\72\65\66\01\6f\01\1a\80\80\04\03\03\02\00\03\08\01\01\09\05\01\01\00\01\00\0a\28\02\14\00\d0\6f\20\00\41\02\11\01\00\41\01\25\01\41\01\11\02\00\0b\11\00\41\00\25\01\41\0d\25\01\d2\00\41\03\11\04\00\0b\00\48\04\6e\61\6d\65\01\12\02\00\09\6f\6e\6d\65\73\73\61\67\65\01\04\6d\61\69\6e\02\0c\02\00\01\00\05\65\76\65\6e\74\01\00\05\15\02\00\07\66\75\6e\63\72\65\66\01\09\65\78\74\65\72\6e\72\65\66\08\08\01\00\05\66\75\6e\63\73")
+    (data $text (i32.const 0) "\80\d6\00\00\00\7a\67\80\fc\00\00\00\72\20\46\80\31\01\00\00\72\61\74\20\80\d6\00\00\00\7a\70\6f\6c\61\74\61\64\64\45\76\65\6e\74\4c\69\73\74\65\6e\65\72\4d\65\73\73\61\67\65\45\76\65\6e\74\45\76\65\6e\74\54\61\72\67\65\74\57\65\62\41\73\73\65\6d\62\6c\79\69\6e\73\74\61\6e\74\69\61\74\65\55\69\6e\74\38\41\72\72\61\79\70\72\6f\74\6f\74\79\70\65\70\72\6f\74\6f\74\79\70\65\63\6f\6e\73\74\72\75\63\74\70\72\6f\74\6f\74\79\70\65\6c\6f\63\61\74\69\6f\6e\69\6e\73\74\61\6e\63\65\6d\65\73\73\61\67\65\63\6f\6e\73\6f\6c\65\63\6f\6d\70\69\6c\65\65\78\70\6f\72\74\73\52\65\66\6c\65\63\74\50\72\6f\6d\69\73\65\77\61\72\6e\64\61\74\61\68\72\65\66\62\69\6e\64\63\61\6c\6c\74\68\65\6e\77\61\73\6d\67\65\74")
+    (data $interset_wasm "\00\61\73\6d\01\00\00\00\01\16\04\60\00\00\60\04\6f\6f\6f\6f\00\60\01\6f\01\6f\60\03\6f\6f\70\00\02\f5\01\21\01\30\01\30\00\00\01\30\01\31\00\01\01\30\01\32\00\02\01\30\01\33\00\03\01\31\01\30\03\6f\00\01\31\01\31\03\6f\00\01\32\01\30\03\6f\00\01\32\01\31\03\6f\00\01\32\01\32\03\6f\00\01\32\01\33\03\6f\00\01\32\01\34\03\6f\00\01\32\01\35\03\6f\00\01\32\01\36\03\6f\00\01\32\01\37\03\6f\00\01\32\01\38\03\6f\00\01\32\01\39\03\6f\00\01\32\02\31\30\03\6f\00\01\32\02\31\31\03\6f\00\01\32\02\31\32\03\6f\00\01\32\02\31\33\03\6f\00\01\32\02\31\34\03\6f\00\01\32\02\31\35\03\6f\00\01\32\02\31\36\03\6f\00\01\32\02\31\37\03\6f\00\01\32\02\31\38\03\6f\00\01\32\02\31\39\03\6f\00\01\32\02\32\30\03\6f\00\01\32\02\32\31\03\6f\00\01\32\02\32\32\03\6f\00\01\32\02\32\33\03\6f\00\01\32\02\32\34\03\6f\00\01\32\02\32\35\03\6f\00\01\32\02\32\36\03\6f\00\04\13\03\70\01\04\80\80\04\6f\01\02\80\80\04\6f\01\1b\80\80\04\07\21\03\07\66\75\6e\63\72\65\66\01\00\09\65\78\74\65\72\6e\72\65\66\01\01\07\74\65\78\74\72\65\66\01\02\09\6f\03\00\41\00\0b\04\00\01\02\03\06\01\41\00\0b\6f\02\23\00\0b\23\01\0b\06\02\41\00\0b\6f\1b\23\02\0b\23\03\0b\23\04\0b\23\05\0b\23\06\0b\23\07\0b\23\08\0b\23\09\0b\23\0a\0b\23\0b\0b\23\0c\0b\23\0d\0b\23\0e\0b\23\0f\0b\23\10\0b\23\11\0b\23\12\0b\23\13\0b\23\14\0b\23\15\0b\23\16\0b\23\17\0b\23\18\0b\23\19\0b\23\1a\0b\23\1b\0b\23\1c\0b\00\10\04\6e\61\6d\65\02\09\04\00\00\01\00\02\00\03\00")
+    (data $directed_wasm "\00\61\73\6d\01\00\00\00\01\1a\05\60\01\6f\00\60\01\6f\01\6f\60\04\6f\6f\6f\6f\00\60\00\00\60\03\6f\6f\70\00\02\3f\03\04\77\61\73\6d\07\66\75\6e\63\72\65\66\01\70\01\04\80\80\04\04\77\61\73\6d\09\65\78\74\65\72\6e\72\65\66\01\6f\01\02\80\80\04\04\77\61\73\6d\07\74\65\78\74\72\65\66\01\6f\01\1b\80\80\04\03\03\02\00\03\08\01\01\09\05\01\01\00\01\00\0a\2c\02\18\00\d0\6f\20\00\41\02\11\01\00\41\00\25\02\41\01\25\01\41\01\11\02\00\0b\11\00\41\00\25\01\41\0d\25\02\d2\00\41\03\11\04\00\0b\00\47\04\6e\61\6d\65\01\12\02\00\09\6f\6e\6d\65\73\73\61\67\65\01\04\6d\61\69\6e\02\0c\02\00\01\00\05\65\76\65\6e\74\01\00\05\1e\03\00\07\66\75\6e\63\72\65\66\01\09\65\78\74\65\72\6e\72\65\66\02\07\74\65\78\74\72\65\66")
 
     (start $main)
 )
