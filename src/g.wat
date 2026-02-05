@@ -6,7 +6,7 @@
     (func $onmessage
         (param $event externref)
 
-        (call_direct $console.warn
+        (call_indirect $self.console.log
             (param externref externref externref externref) 
             (result)
 
@@ -17,18 +17,18 @@
 
                 (local.get $event)
             )
-            (text "Özgür Fırat Özpolat")
+            (ref.extern "Özgür Fırat Özpolat")
             (ref.extern $location.href)
         )
     )
     
     (start $main
-        (call_direct $EventTarget:addEventListener 
+        (call_indirect $self.EventTarget:addEventListener 
             (param externref externref funcref)
             (result)
 
-            (self)
-            (text "message")
+            (ref.extern $self)
+            (ref.extern "message")
             (ref.func $onmessage)
         )
     )
