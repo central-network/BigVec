@@ -7,7 +7,7 @@
 
     self.wasm = {};
     
-    WebAssembly.instantiateStreaming(fetch("src/manipulated.wasm"), self);
+    WebAssembly.instantiateStreaming(fetch("out.wasm"), self).then(d => console.log(d.instance));
 
 
     (async () => {

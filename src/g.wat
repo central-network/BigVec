@@ -1,17 +1,15 @@
-(module
-    (elem funcref
-        (ref.func $onmessage)
-    )
-
+(module $window
     (func $onmessage
         (param $event externref)
+        (local externref)
+        (local i32)
 
-        (call_indirect $self.console.log
+        (call $self.console.log
             (param externref externref externref externref) 
             (result)
 
             (ref.null extern)
-            (call_indirect $self.MessageEvent:data[get]
+            (call $self.MessageEvent:data[get]
                 (param externref)
                 (result externref)
 
@@ -21,13 +19,17 @@
             (ref.extern $self.location.href)
         )
     )
+
+
+    (elem funcref (ref.func $onmessage))
     
-    (start $main
-        (call_indirect $self.EventTarget:addEventListener 
+    (func start $init
+
+        (call $self.EventTarget:addEventListener
             (param externref externref funcref)
             (result)
 
-            (ref.extern $self)
+            (self)
             (ref.extern "message")
             (ref.func $onmessage)
         )
