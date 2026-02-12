@@ -6,8 +6,12 @@
     //self.memory = new LocalSharedMemory(1, 65536, true);
 
     self.wasm = {};
-    
-    WebAssembly.instantiateStreaming(fetch("out.wasm"), self).then(d => console.log(d.instance));
+    // Create a test event with data
+const testEvent = new MessageEvent('test_event', { data: 'Prototype Power!' });
+self.myTestEvent = testEvent;
+
+    WebAssembly.instantiateStreaming(fetch("h.wasm"), self).then(d => console.log(d.instance));
+    //WebAssembly.instantiateStreaming(fetch("out.wasm"), self).then(d => console.log(d.instance));
 
 
     (async () => {

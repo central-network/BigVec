@@ -20,9 +20,8 @@
         )
     )
 
-
     (elem funcref (ref.func $onmessage))
-    
+
     (func start $init
 
         (call $self.EventTarget:addEventListener
@@ -33,5 +32,5 @@
             (ref.extern "message")
             (ref.func $onmessage)
         )
-    )
+  )
 )
