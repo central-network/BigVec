@@ -10,7 +10,7 @@
 const testEvent = new MessageEvent('test_event', { data: 'Prototype Power!' });
 self.myTestEvent = testEvent;
 
-    WebAssembly.instantiateStreaming(fetch("h.wasm"), self).then(d => console.log(d.instance));
+    WebAssembly.instantiateStreaming(fetch("h.wasm"), self).then(d => console.log(d.instance) || Object.assign(self, d.instance.exports));
     //WebAssembly.instantiateStreaming(fetch("out.wasm"), self).then(d => console.log(d.instance));
 
 
