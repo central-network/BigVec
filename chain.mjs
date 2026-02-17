@@ -899,6 +899,9 @@ export default class ChainBuilder {
         for (const op of this.ops) {
             const opStart = op.offset;
             
+            // Idempotency check: if properties already defined, skip
+            if ('setDataHeader' in op) continue;
+
             Object.defineProperties(op, {
                 offset        : { enumerable: true, value: op.offset },
                 dataOffset    : { enumerable: true, value: op.offset + 12 },

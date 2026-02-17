@@ -2,76 +2,102 @@
 import fs from 'fs';
 import path from 'path';
 
-// Load Browser Schema
-const schemaPath = './browser_env.json';
-const proxies = new Map();
+export let self;
 
-export const kSchemaNode = Symbol("toSchemaNode");
-export const kSchemaPath = Symbol("toSchemaPath");
-export const kSchemaType = Symbol("toSchemaType");
-export const kSchemaName = Symbol("toSchemaName");
+export const 
+    kSchema = Symbol("kSchema"), 
+    kParent = Symbol("kParent"), 
+    kTypeOf = Symbol("kTypeOf"), 
+    kPropName = Symbol("kPropName"), 
+    kSelfPath = Symbol("kSelfPath");
 
-export const getPath = (proxy) => Reflect.get(proxy, kSchemaPath);
-export const getType = (proxy) => Reflect.get(proxy, kSchemaType);
-export const getNode = (proxy) => Reflect.get(proxy, kSchemaNode);
-export const getName = (proxy) => Reflect.get(proxy, kSchemaName);
+const proxies = new WeakSet();
 
-const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));
-
-function create(path, subkeys = true) {
-    if (subkeys && proxies.has(path)) {
-        return proxies.get(path);
-    }
-
-    const schemaPath = path;
-    const schemaNode = schema[schemaPath];
-
-    if (!schemaNode) {
-        //console.error(`No schema for path:`, schemaPath);
-        return "";
-    }
-
-    const schemaType = schemaNode.type;
-    const schemaName = schemaNode.name;
-
-    let func = `return ${schemaNode.value}`;
-
-
-    switch (schemaType)  {
-        case "class"    : func = `return class ${schemaName} {}`; break; 
-        case "function" : func = `return function ${schemaName} () {}`; break; 
-        case "object"   : func = `return new class ${schemaName} {}()`; break; 
-    }
-
-    let target = Function(func)();
-
-    if (subkeys && target === Object(target)) {
-        if (schemaName) {
-            Object.defineProperty(target, Symbol.toStringTag, {
-                value: schemaName
-            });
-        }
-
-        Object.defineProperty(target, kSchemaNode, {value: schemaNode});
-        Object.defineProperty(target, kSchemaType, {value: schemaType});
-        Object.defineProperty(target, kSchemaPath, {value: schemaPath});
-        Object.defineProperty(target, kSchemaName, {value: schemaName});
-
-        target = Object.create(target);
-    }
-
-    if (subkeys && schemaNode.keys.length) {
-
-        schemaNode.keys.forEach(key => {
-            target[key] ??= create(schemaPath.concat(".", key), false);
-        });
-
-        proxies.set(schemaPath, target);
-        proxies.set(target, schemaPath);
-    }
-
-    return target;
+function isProxyPath (any) {
+    return proxies.has(any);
 }
+
+class Externref { 
+    static $tbl = new Array(null, "self.String.fromCodePoint", "self.Reflect.get");
+    static type = "externref";
+    
+    static get size () { return this.$tbl.length; }
+
+    get type () { return this.constructor.type; }
+    get idx () { return Externref.$tbl.indexOf(this); }
+    set value (v) {  }
+
+    static add ($) { return this.$tbl[this.size] = $; }
+    static has ($) { return this.$tbl.includes($); }
+    static for (v) { return this[Object(v).constructor.name] ?? console.error("Unknown primitive:", v); }
+    
+    static String   = class Stringref   extends this { static from ( value = "" )       {}; static type = "string"; };
+    static Number   = class Numberref   extends this { static from ( value = 0 )        {}; static type = "number"; };
+    static Array    = class Arrayref    extends this { static from ( value = [] )       {}; static type = "array"; };
+    static Symbol   = class Symbolref   extends this { static from ( value = Symbol() ) {}; static type = "symbol"; };
+    static Bigint   = class Bigintref   extends this { static from ( value = 0n )       {}; static type = "bigint"; };
+    static Boolean  = class Booleanref  extends this { static from ( value = false )    {}; static type = "boolean"; };
+    static Object   = class Objectref   extends this { static from ( value = {})        {}; static type = "object"; };
+    static Function = class Functionref extends this { static from ( value = () => {})  {}; static type = "function"; };
+
+    constructor () { Externref.add(this) }
+
+    static from (any) {
+        if (any instanceof this) { return any };
+        const ext = Reflect.construct(this.for(any), []);
+        ext.value = any;
+        return ext; 
+    }
+
+    get externref () { return this };
+};
+
+
+
+String.prototype.toCamelCase = function () {
+    return this.at(0).toLowerCase().concat(
+        this.substring(1)
+    );
+}
+
+String.prototype.toBaseName = function () {
+    let name = this.split(".").pop().split("[").at();
+    if (name === "prototype") {
+        name = this.toNodeName();
+    }
+    return name;
+}
+
+String.prototype.toParentPath = function () {
+    return this.split(".").reverse().slice(1).reverse().join(".");
+}
+
+String.prototype.toClassName = function () {
+    return this.split(".self.").pop().split(".").at();
+};
+
+String.prototype.toNodeName = function () {
+    return this.split(".prototype").at().toBaseName().toCamelCase();
+}
+
+Object.defineProperties(Object.prototype, {
+    typeof : {
+        get : function () {
+            switch (this.name) {
+                case "Number": return "number";
+                case "String": return "string";
+                case "Symbol": return "symbol";
+                case "object": return "object";
+            }
+
+            return "function";
+        }
+    },
+
+    externref : { 
+        get : function () { return Externref.from(this) } 
+    }
+});
 
 /**
  * Creates a recursive logging proxy that tracks the underlying value.
@@ -80,7 +106,7 @@ function create(path, subkeys = true) {
  * @param {string} [name] - The property name.
  * @param {object} [schemaNode] - The schema definition for this object (from browser_env.json).
  */
-function createRecursiveProxy(path = 'self') {
+function createRecursiveProxy(path = 'self', type = "function") {
     
     // 1. Determine the "Value"
     
@@ -88,45 +114,70 @@ function createRecursiveProxy(path = 'self') {
     // If we have a schema definition stating this is a function, we must use a function as target.
     // Otherwise it might be an object or primitive.
 
-    const proxyTarget = create(path);
-    
-    const handler = {
-        get(target, prop, receiver) {
-            //console.log(`[Proxy] GET ${path}.${String(prop)}`);
+    let name, target;
+
+    if (type !== "object") {
+        name = path.toBaseName();
+        target = Function(`return class ${name} extends this { path = '${path}'; type = '${type}';  }`).call(Externref);
+    } else {
+        name = path.toNodeName();
+        target = Function(`return new class ${name} extends this { path = '${path}'; type = '${type}';  }`).call(Externref);
+    }
+
+    const _call     = ( ...args ) => { console.log(['.call', path], args);};
+    const _apply    = ( thisArg, args ) => { console.log(['.apply', path], thisArg, args);};
+    const _bind     = ( thisArg, ...args ) => { console.log(['.bind', path], thisArg, args);};
+    const _path     = () => path;
+
+    const prx = new Proxy(target, {
+
+        apply: function (func, thisArg, argsList) {
+            console.log(['APPLY', func.name], `${String(thisArg)}(`, ...argsList, `)`);
+            return createRecursiveProxy(String(thisArg).concat(".", "apply"), "object");
+        },
+
+        set: function (externref, prop, value) {
+             console.log(['SET', externref], `${path}[${JSON.stringify(String(prop))}] =`, value);
+             return value;
+        },
+
+        defineProperty: function (target, prop, descriptor) {
+            throw ['DEFINE', `${path}.${String(prop)}`, descriptor];
+        },
+
+        construct: function (obj, argsList) {
+            console.log(['NEW', obj], `${path}`, argsList, obj.typeof);
+            argsList.externref;
+            obj.externref;
+            return createRecursiveProxy(path.concat(".", "prototype"), obj.typeof);
+        },
+
+        get : function (obj, prop, prx) {
+            console.log(['GET', prop], `${path}.${String(prop)}`);
 
             if (typeof prop === "symbol") {
-                return Reflect.get(target, prop);
+                switch (prop) {
+                    case Symbol.toString: 
+                    case Symbol.toPrimitive: return _path;
+                }
+            }
+
+            if (typeof prop === "string") {
+                switch (prop) {
+                    case "call"     : return _call;
+                    case "apply"    : return _apply;
+                    case "bind"     : return _bind;
+                    case "toString" : return _path;
+                }
             }
 
             return createRecursiveProxy(path.concat(".", prop));
-        },
-        apply(target, thisArg, args) {
-             const currentPath = getPath(proxy); 
-             console.log(`[Proxy] CALL ${currentPath}(${args.map(a => String(a)).join(', ')})`);
-             let result;
-             try { result = Reflect.apply(target, thisArg, args); } catch (e) { result = undefined; }
-             return createRecursiveProxy(result, proxy, `(return)`);
-        },
-        construct(target, args, newTarget) {
-            const currentPath = getPath(proxy);
-            console.log(`[Proxy] NEW ${currentPath}(${args.map(a => String(a)).join(', ')})`);
-            let result;
-            try { result = Reflect.construct(target, args, newTarget); } catch (e) { result = {}; }
-            return createRecursiveProxy(result, proxy, `(instance)`);
-        },
-        set(target, prop, value, receiver) {
-             const currentPath = getPath(receiver);
-             console.log(`[Proxy] SET ${currentPath}.${String(prop)} =`, value);
-             return Reflect.set(target, prop, value, receiver);
-        },
-        defineProperty(target, prop, descriptor) {
-             const currentPath = getPath(proxy);
-             console.log(`[Proxy] DEFINE ${currentPath}.${String(prop)}`, descriptor);
-             return Reflect.defineProperty(target, prop, descriptor);
         }
-    };
+    });
 
-    return new Proxy(proxyTarget, handler);
+    proxies.add(prx);
+
+    return prx;
 }
 
-export default createRecursiveProxy("self");
+export default self = createRecursiveProxy("self");
