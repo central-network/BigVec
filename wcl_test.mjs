@@ -1,12 +1,26 @@
 
 import { self, kDebug } from "./Global.mjs";
 import { compiler } from "./Compiler.mjs";
-import fs from "fs";
-import { Funcref } from "./Funcref.mjs";
+import chain_module, {
+    ChainQueue,
+    ApplyChainOperation
+} from "./chain_module.mjs";
 
-const funcref = new Funcref();
+const chain_op_queue = new ChainQueue();
 
-console.log(funcref.toString());
+chain_op_queue.add(
+    ApplyChainOperation.from(
+        2, //strf
+        3, //null
+        2, //self
+        0, //save
+    )
+)
+
+const mmod = {};
+const wasm = chain_module(chain_op_queue.buffer).compile("chain.wasm", true);
+
+console.log(wasm);
 
 process.exit();
 
