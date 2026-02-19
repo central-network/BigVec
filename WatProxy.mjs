@@ -20,6 +20,7 @@ export const createProxy = (path) => new Proxy(Function, {
                         case "import": return `(import "${arg0[key].join('" "')}")`;
                         case "export": return `(export "${arg0[key]}")`;
                         case "offset": return `${key}=${arg0[key]}`;
+                        case "offset_u32i": return `offset=${arg0[key]*4}`;
                         case "name":   return `$${arg0[key]}`;
                         case "type":   return `${arg0[key]}`;
                     }
@@ -71,7 +72,7 @@ export const wat = createProxy(), {
     local, global,
     ref, data, elem, 
     table, memory, 
-    call, call_indirect, 
+    call, call_indirect, select,
     loop, br, br_if, drop, nop, unreachable
 } = wat;
 

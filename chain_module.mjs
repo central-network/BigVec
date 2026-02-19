@@ -5,38 +5,13 @@ import wat, {
     local, global,
     ref, data, elem, drop,
     table, memory, 
-    call, call_indirect, 
+    call, call_indirect, select,
     loop, br, br_if, nop, unreachable
 } from "./WatProxy.mjs"
 
-export const BYTES_PER_HEADER_VALUE = Uint32Array.BYTES_PER_ELEMENT;
+import opdlog from "./chain_opdlog.mjs";
 
-export const HINDEX_OP_CALL_TBL_FUNC_AT = 0;
-export const HINDEX_OP_SIZE_BYTE_LENGTH = 1;
-export const HCOUNT_OP_REQUIRED_HEADERS = 2;
-
-export const OFFSET_OP_CALL_TBL_FUNC_AT = HINDEX_OP_CALL_TBL_FUNC_AT * BYTES_PER_HEADER_VALUE;
-export const OFFSET_OP_SIZE_BYTE_LENGTH = HINDEX_OP_SIZE_BYTE_LENGTH * BYTES_PER_HEADER_VALUE;
-export const LENGTH_OP_REQUIRED_HEADERS = 8;
-
-export const OFFSET_OPDATA = LENGTH_OP_REQUIRED_HEADERS;
-
-export const HINDEX_APPLYOP_FUNC_TBLEXT_INDEX = 0 + HCOUNT_OP_REQUIRED_HEADERS;
-export const HINDEX_APPLYOP_THIS_TBLEXT_INDEX = 1 + HCOUNT_OP_REQUIRED_HEADERS;
-export const HINDEX_APPLYOP_ARGV_TBLEXT_INDEX = 2 + HCOUNT_OP_REQUIRED_HEADERS;
-export const HINDEX_APPLYOP_SAVE_TBLEXT_INDEX = 3 + HCOUNT_OP_REQUIRED_HEADERS;
-export const HCOUNT_PER_APPLY_OEPRATION = 4 + HCOUNT_OP_REQUIRED_HEADERS;
-
-export const OFFSET_APPLYOP_FUNC_TBLEXT_INDEX = HINDEX_APPLYOP_FUNC_TBLEXT_INDEX * BYTES_PER_HEADER_VALUE;
-export const OFFSET_APPLYOP_THIS_TBLEXT_INDEX = HINDEX_APPLYOP_THIS_TBLEXT_INDEX * BYTES_PER_HEADER_VALUE;
-export const OFFSET_APPLYOP_ARGV_TBLEXT_INDEX = HINDEX_APPLYOP_ARGV_TBLEXT_INDEX * BYTES_PER_HEADER_VALUE;
-export const OFFSET_APPLYOP_SAVE_TBLEXT_INDEX = HINDEX_APPLYOP_SAVE_TBLEXT_INDEX * BYTES_PER_HEADER_VALUE;
-
-export const LENGTH_PER_APPLY_OEPRATION = OFFSET_APPLYOP_SAVE_TBLEXT_INDEX + BYTES_PER_HEADER_VALUE;
-export const ELEMENT_OF_APPLY_OEPRATION = 2;
-
-let tbl_ext = [],
-    tbl_fun = [];
+let tbl_ext = [], tbl_fun = [];
 
 export class ChainQueue extends Array {
     add () { return this.push(...arguments), this; }
@@ -44,55 +19,244 @@ export class ChainQueue extends Array {
 }
 
 export class ChainOperation {
-    static BYTES_PER_OPERATION = LENGTH_OP_REQUIRED_HEADERS;
-    static FUNCREF_TABLE_INDEX = 0;
 
-    constructor (
-        data_len = new.target.BYTES_PER_OPERATION, 
-        func_idx = new.target.FUNCREF_TABLE_INDEX,
-        size_extra_alloc = 0
-    ) {
-        this.length = Math.ceil((data_len+size_extra_alloc)/4)*4;
-        this.buffer = Buffer.alloc(this.length);
+    static COUNT_OP_HEADERS = 0;
+    static BYTES_PER_HEADER = Uint32Array.BYTES_PER_ELEMENT;
+    static ELEMENT_FUNCREFS = new Array(null);
 
-        this.setHeader(HINDEX_OP_CALL_TBL_FUNC_AT, func_idx);
-        this.setHeader(HINDEX_OP_SIZE_BYTE_LENGTH, this.length);
+    static HEADERS = {
+        BYTES_PER_OPERATION : this.headerCount++,
+        CALL_INDIRECT_INDEX : this.headerCount++,
+    };
+    static get OFFSET () {
+        return Object.fromEntries(
+            Object.keys(this.HEADERS).map(key => [
+                key, this.offsetAt(this.HEADERS[key])
+            ])
+        );
     }
 
-    setHeader (index, value) { this.buffer.writeUint32LE(value, index * BYTES_PER_HEADER_VALUE); }
-    getHeader (index) { return this.buffer.readUint32LE(index * BYTES_PER_HEADER_VALUE);}
+    static get BYTES_PER_OPERATION () { return this.offsetAt(this.headerCount); }
+    static get CALL_INDIRECT_INDEX () { return this.ELEMENT_FUNCREFS.indexOf(this.$name) };
+    static get CALL_INDIRECT_$NAME () { return this.ELEMENT_FUNCREFS.at(this.CALL_INDIRECT_INDEX) };
+
+    get BYTES_PER_OPERATION () { return this.constructor.BYTES_PER_OPERATION; }
+    get CALL_INDIRECT_INDEX () { return this.constructor.CALL_INDIRECT_INDEX; }
+    get CALL_INDIRECT_$NAME () { return this.constructor.CALL_INDIRECT_$NAME; }
+
+    get BYTES_PER_HEADER    () { return this.constructor.BYTES_PER_HEADER; }
+    get COUNT_OP_HEADERS    () { return this.constructor.COUNT_OP_HEADERS; }
+    
+    get HEADERS () { return this.constructor.HEADERS; }
+
+    static get headerCount () { return this.COUNT_OP_HEADERS; }
+    static set headerCount (v) { this.COUNT_OP_HEADERS = v; }
+    static offsetAt (index) { 
+        if (typeof index !== "number" || index < 0) {
+            throw {
+                error: `Offset request from unknown index!`,
+                arguments: arguments,
+                constructor: this.name
+            }
+        }
+        return index * this.BYTES_PER_HEADER 
+    }
+
+    static registerHeaders ($name, headers) { 
+        this.ELEMENT_FUNCREFS.push($name);
+        this.$name = $name;
+
+        const proto = Reflect.getPrototypeOf(this);
+        const pheaders = structuredClone(proto.HEADERS); 
+
+        return Object.assign(pheaders, headers);
+    }
+
+    offsetAt (index) { return this.constructor.offsetAt(index) }
+
+    setHeader (index, value = 0) { this.buffer.writeUint32LE(value, this.offsetAt(index)); }
+    getHeader (index) { return this.buffer.readUint32LE(this.offsetAt(index));}
+
+    static getHeader (index) { return Reflect.get(this, Object.keys(this.HEADERS).at(index)) }
+    static setHeader (index, value) { Reflect.set(this, Object.keys(this.HEADERS).at(index), value) }
+
+    get buffer () { 
+        return Object.defineProperty(this, "buffer", {
+            value: Buffer.alloc(this.BYTES_PER_OPERATION),
+            configurable: true, writable: true 
+        }).buffer; 
+    }
 
     static from ( ...args ) {
         const op = new this();
-        let hidx = HCOUNT_OP_REQUIRED_HEADERS;
-        args.forEach(v => op.setHeader(hidx++, v));
+        
+        let header_i = this.COUNT_OP_HEADERS;
+        let argval_i = args.length;
+
+        const reqlen = header_i - this.__proto__.COUNT_OP_HEADERS;
+
+        if (args.length < reqlen) {
+            throw {
+                error: `At least ${reqlen} parameters required to create a new operation!`,
+                arguments,
+                constructor: this.name
+            };
+        }
+
+        while (argval_i > 0) { 
+            op.setHeader(--header_i, args[--argval_i]);
+        }
+
+        while (header_i-- > 0) {
+            op.setHeader(header_i, this.getHeader(header_i));
+        }
+
         return op;
     }
+
+    get result () { return this.getHeader(this.RESULT_HEADER_INDEX ?? -1) }
+
+    get dump () { opdlog(this) }
+}
+
+export class GrowTableChainOperation extends ChainOperation {
+    static HEADERS = this.registerHeaders( "$grow_table", {
+        PARAM0_EXTERN_GROW_LENGTH : this.headerCount++,
+        RESULT_FIRST_EXTERN_INDEX : this.headerCount++,
+    });
+
+    static RESULT_HEADER_INDEX = this.HEADERS.RESULT_FIRST_EXTERN_INDEX;
+    static get PARAM0_EXTERN_GROW_LENGTH () { return 1; }
+
+    set grow_count ( value ) { this.setHeader(this.HEADERS.PARAM0_EXTERN_GROW_LENGTH, value); }
+    get grow_count () { return this.getHeader(this.HEADERS.PARAM0_EXTERN_GROW_LENGTH); }
+
+    set first_index ( value ) { this.setHeader(this.HEADERS.RESULT_FIRST_EXTERN_INDEX, value); }
+    get first_index () { return this.getHeader(this.HEADERS.RESULT_FIRST_EXTERN_INDEX); }
+}
+
+export class CopyMemoryChainOperation extends ChainOperation {
+    static HEADERS = this.registerHeaders( "$copy_memii", {
+        PARAM0_DST_WRITER_OFFSET : this.headerCount++,
+        PARAM1_SRC_READER_OFFSET : this.headerCount++,
+        PARAM2_LEN_MEMCPY_LENGTH : this.headerCount++,
+    });
+
+    static get PARAM0_DST_WRITER_OFFSET () { throw "Copy operation trying to write heap begin!"; }
+
+    set dst_writer_offset   ( value ) { this.setHeader(this.HEADERS.PARAM0_DST_WRITER_OFFSET, value); }
+    get dst_writer_offset   () { return this.getHeader(this.HEADERS.PARAM0_DST_WRITER_OFFSET); }
+
+    set src_reader_offset   ( value ) { this.setHeader(this.HEADERS.PARAM2_SRC_READER_OFFSET, value); }
+    get src_reader_offset   () { return this.getHeader(this.HEADERS.PARAM2_SRC_READER_OFFSET); }
+
+    set len_memcpy_length   ( value ) { this.setHeader(this.HEADERS.PARAM2_LEN_MEMCPY_LENGTH, value); }
+    get len_memcpy_length   () { return this.getHeader(this.HEADERS.PARAM2_LEN_MEMCPY_LENGTH); }
+}
+
+export class NewArrayChainOperation extends ChainOperation {
+
+    static HEADERS = this.registerHeaders( "$wasm_array", {
+        RESULT_GROW_EXTERN_TABLE_INDEX : this.headerCount++,
+    });
+
+    static RESULT_HEADER_INDEX = this.HEADERS.RESULT_GROW_EXTERN_TABLE_INDEX;
+
+    set grow_ext_idx ( value ) { this.setHeader(this.HEADERS.RESULT_GROW_EXTERN_TABLE_INDEX, value); }
+    get grow_ext_idx () { return this.getHeader(this.HEADERS.RESULT_GROW_EXTERN_TABLE_INDEX); }
 }
 
 export class ApplyChainOperation extends ChainOperation {
 
-    static BYTES_PER_OPERATION = LENGTH_PER_APPLY_OEPRATION;
-    static FUNCREF_TABLE_INDEX = ELEMENT_OF_APPLY_OEPRATION;
+    static HEADERS = this.registerHeaders( "$wasm_apply", {
+        PARAM0_FUNC_EXTERN_TABLE_INDEX : this.headerCount++,
+        PARAM1_THIS_EXTERN_TABLE_INDEX : this.headerCount++,
+        PARAM2_ARGV_EXTERN_TABLE_INDEX : this.headerCount++,
+        RESULT_GROW_EXTERN_TABLE_INDEX : this.headerCount++,
+    });
 
-    static from (
-        hvalue_func_tblext_index,
-        hvalue_this_tblext_index,
-        hvalue_argv_tblext_index,
-        hvalue_save_tblext_index,        
-    ) { return super.from( ...arguments ) }
+    static RESULT_HEADER_INDEX = this.HEADERS.RESULT_GROW_EXTERN_TABLE_INDEX;
 
-    set func_tblext_index ( hvalue_func_tblext_index ) { this.setHeader(HINDEX_APPLYOP_FUNC_TBLEXT_INDEX, hvalue_func_tblext_index); }
-    set this_tblext_index ( hvalue_this_tblext_index ) { this.setHeader(HINDEX_APPLYOP_THIS_TBLEXT_INDEX, hvalue_this_tblext_index); }
-    set argv_tblext_index ( hvalue_argv_tblext_index ) { this.setHeader(HINDEX_APPLYOP_ARGV_TBLEXT_INDEX, hvalue_argv_tblext_index); }
-    set save_tblext_index ( hvalue_save_tblext_index ) { this.setHeader(HINDEX_APPLYOP_ARGV_TBLEXT_INDEX, hvalue_save_tblext_index); }
+    set grow_ext_idx ( value ) { this.setHeader(this.HEADERS.RESULT_GROW_EXTERN_TABLE_INDEX, value); }
+    set func_ext_idx ( value ) { this.setHeader(this.HEADERS.PARAM0_FUNC_EXTERN_TABLE_INDEX, value); }
+    set this_ext_idx ( value ) { this.setHeader(this.HEADERS.PARAM1_THIS_EXTERN_TABLE_INDEX, value); }
+    set argv_ext_idx ( value ) { this.setHeader(this.HEADERS.PARAM2_ARGV_EXTERN_TABLE_INDEX, value); }
     
-    get func_tblext_index () { return this.getHeader(HINDEX_APPLYOP_FUNC_TBLEXT_INDEX); }
-    get this_tblext_index () { return this.getHeader(HINDEX_APPLYOP_THIS_TBLEXT_INDEX); }
-    get argv_tblext_index () { return this.getHeader(HINDEX_APPLYOP_ARGV_TBLEXT_INDEX); }
-    get save_tblext_index () { return this.getHeader(HINDEX_APPLYOP_ARGV_TBLEXT_INDEX); }
+    get grow_ext_idx () { return this.getHeader(this.HEADERS.RESULT_GROW_EXTERN_TABLE_INDEX); }
+    get func_ext_idx () { return this.getHeader(this.HEADERS.PARAM0_FUNC_EXTERN_TABLE_INDEX); }
+    get this_ext_idx () { return this.getHeader(this.HEADERS.PARAM1_THIS_EXTERN_TABLE_INDEX); }
+    get argv_ext_idx () { return this.getHeader(this.HEADERS.PARAM2_ARGV_EXTERN_TABLE_INDEX); }
 }
 
+export class SetIntegerAtChainOperation extends ChainOperation {
+
+    static HEADERS = this.registerHeaders( "$wasm_setii", {
+        PARAM0_TARGET_EXTERN_INDEX : this.headerCount++,
+        PARAM1_KEY_UINT32_NUMBER : this.headerCount++,
+        PARAM2_VALUE_UINT32_NUMBER : this.headerCount++,
+    });
+
+    set target_extern_index ( value ) { this.setHeader(this.HEADERS.PARAM0_TARGET_EXTERN_INDEX, value); }
+    set key_uint32_number ( value ) { this.setHeader(this.HEADERS.PARAM1_KEY_UINT32_NUMBER, value); }
+    set value_uint32_number ( value ) { this.setHeader(this.HEADERS.PARAM2_VALUE_UINT32_NUMBER, value); }
+    
+    get target_extern_index () { return this.getHeader(this.HEADERS.PARAM0_TARGET_EXTERN_INDEX); }
+    get key_uint32_number () { return this.getHeader(this.HEADERS.PARAM1_KEY_UINT32_NUMBER); }
+    get value_uint32_number () { return this.getHeader(this.HEADERS.PARAM2_VALUE_UINT32_NUMBER); }
+}
+
+export class SetFuncrefAtChainOperation extends ChainOperation {
+
+    static HEADERS = this.registerHeaders( "$wasm_setif", {
+        PARAM0_TARGET_EXTERN_INDEX : this.headerCount++,
+        PARAM1_KEY_UINT32_NUMBER : this.headerCount++,
+        PARAM2_VALUE_FUNCREF_INDEX : this.headerCount++,
+    });
+
+    set target_extern_index ( value ) { this.setHeader(this.HEADERS.PARAM0_TARGET_EXTERN_INDEX, value); }
+    set key_uint32_number ( value ) { this.setHeader(this.HEADERS.PARAM1_KEY_UINT32_NUMBER, value); }
+    set value_funcref_index ( value ) { this.setHeader(this.HEADERS.PARAM2_VALUE_FUNCREF_INDEX, value); }
+    
+    get target_extern_index () { return this.getHeader(this.HEADERS.PARAM0_TARGET_EXTERN_INDEX); }
+    get key_uint32_number () { return this.getHeader(this.HEADERS.PARAM1_KEY_UINT32_NUMBER); }
+    get value_funcref_index () { return this.getHeader(this.HEADERS.PARAM2_VALUE_FUNCREF_INDEX); }
+}
+
+export class SetExternrefAtChainOperation extends ChainOperation {
+
+    static HEADERS = this.registerHeaders( "$wasm_setie", {
+        PARAM0_TARGET_EXTERN_INDEX : this.headerCount++,
+        PARAM1_KEY_UINT32_NUMBER : this.headerCount++,
+        PARAM2_VALUE_EXTERN_INDEX : this.headerCount++,
+    });
+
+    set target_extern_index ( value ) { this.setHeader(this.HEADERS.PARAM0_TARGET_EXTERN_INDEX, value); }
+    set key_uint32_number ( value ) { this.setHeader(this.HEADERS.PARAM1_KEY_UINT32_NUMBER, value); }
+    set value_extern_index ( value ) { this.setHeader(this.HEADERS.PARAM2_VALUE_EXTERN_INDEX, value); }
+    
+    get target_extern_index () { return this.getHeader(this.HEADERS.PARAM0_TARGET_EXTERN_INDEX); }
+    get key_uint32_number () { return this.getHeader(this.HEADERS.PARAM1_KEY_UINT32_NUMBER); }
+    get value_extern_index () { return this.getHeader(this.HEADERS.PARAM2_VALUE_EXTERN_INDEX); }
+}
+
+export class SetBytesFromChainOperation extends ChainOperation {
+    static HEADERS = this.registerHeaders( "$wasm_setni", {
+        PARAM0_TARGET_EXTERN_INDEX  : this.headerCount++,
+        PARAM1_OFFSET_UINT32_NUMBER : this.headerCount++,
+        PARAM2_LENGTH_UINT32_NUMBER : this.headerCount++,
+        PARAM3_STRIDE_UINT32_NUMBER : this.headerCount++,
+    });
+
+    set target_extern_index  ( value ) { this.setHeader(this.HEADERS.PARAM0_TARGET_EXTERN_INDEX, value); }
+    set offset_uint32_number ( value ) { this.setHeader(this.HEADERS.PARAM1_OFFSET_UINT32_NUMBER, value); }
+    set length_uint32_number ( value ) { this.setHeader(this.HEADERS.PARAM2_LENGTH_UINT32_NUMBER, value); }
+    set stride_uint32_number ( value ) { this.setHeader(this.HEADERS.PARAM3_STRIDE_UINT32_NUMBER, value); }
+    
+    get target_extern_index  () { return this.getHeader(this.HEADERS.PARAM0_TARGET_EXTERN_INDEX); }
+    get offset_uint32_number () { return this.getHeader(this.HEADERS.PARAM1_OFFSET_UINT32_NUMBER); }
+    get length_uint32_number () { return this.getHeader(this.HEADERS.PARAM2_LENGTH_UINT32_NUMBER); }
+    get stride_uint32_number () { return this.getHeader(this.HEADERS.PARAM3_STRIDE_UINT32_NUMBER); }
+}
 
 export default (buffer = Buffer.alloc(4)) => 
     wat.module(
@@ -109,78 +273,145 @@ export default (buffer = Buffer.alloc(4)) =>
         func({ name: "grow_table"},
             param({ name: "ptr"}, i32),
 
-            i32.store({ offset: OFFSET_OPDATA },
+            i32.store({ offset: GrowTableChainOperation.OFFSET.RESULT_FIRST_EXTERN_INDEX },
                 local.get({ name: "ptr" }),
-                table.grow({ name: "ext" }, ref.null(extern), i32.const(1))
+                table.grow({ name: "ext" }, 
+                    ref.null(extern), 
+                    i32.load({ offset: GrowTableChainOperation.OFFSET.PARAM0_EXTERN_GROW_LENGTH },
+                        local.get(0)
+                    )
+                )
+            )
+        ),
+        func({ name: "copy_memii" },
+            param(i32),
+
+            memory.copy(
+                i32.load({offset: CopyMemoryChainOperation.OFFSET.PARAM0_DST_WRITER_OFFSET}, local.get(0)),
+                i32.load({offset: CopyMemoryChainOperation.OFFSET.PARAM1_SRC_READER_OFFSET}, local.get(0)),
+                i32.load({offset: CopyMemoryChainOperation.OFFSET.PARAM2_LEN_MEMCPY_LENGTH}, local.get(0)),
             )
         ),
         func({ name: "wasm_array" },
             param(i32),
-            table.set({name: "ext"},
-                i32.load({offset: OFFSET_OPDATA}, local.get(0)),
+
+            local({name: "result_idx"}, i32),
+            local({name: "result_ext"}, externref),
+
+            local.set({name: "result_ext"}, 
                 call({name: "self_array"})
-            )
+            ),
+
+            wat.if(
+                local.tee({name: "result_idx"}, 
+                    i32.load({offset: NewArrayChainOperation.OFFSET.RESULT_GROW_EXTERN_TABLE_INDEX }, 
+                        local.get(0)
+                    )
+                ),
+                wat.then(
+                    table.set({name: "ext"}, 
+                        local.get({name: "result_idx"}), 
+                        local.get({name: "result_ext"}), 
+                    )
+                ),
+                wat.else(
+                    i32.store({offset: NewArrayChainOperation.OFFSET.RESULT_GROW_EXTERN_TABLE_INDEX }, 
+                        local.get(0),
+                        table.grow({name: "ext"}, 
+                            local.get({name: "result_ext"}), 
+                            i32.const(1)
+                        )
+                    )
+                )
+            ),
         ),
         func({ name: "wasm_apply" },
             param(i32),
-            table.set({name: "ext"},
-                i32.load({offset: OFFSET_APPLYOP_SAVE_TBLEXT_INDEX}, local.get(0)),
+
+            local({name: "result_idx"}, i32),
+            local({name: "result_ext"}, externref),
+
+            local.set({name: "result_ext"},
                 call({ name: "self_apply"},
-                    table.get({name: "ext"}, i32.load({offset: OFFSET_APPLYOP_FUNC_TBLEXT_INDEX}, local.get(0))),
-                    table.get({name: "ext"}, i32.load({offset: OFFSET_APPLYOP_THIS_TBLEXT_INDEX}, local.get(0))),
-                    table.get({name: "ext"}, i32.load({offset: OFFSET_APPLYOP_ARGV_TBLEXT_INDEX}, local.get(0))),
+                    table.get({name: "ext"}, i32.load({offset: ApplyChainOperation.OFFSET.PARAM0_FUNC_EXTERN_TABLE_INDEX}, local.get(0))),
+                    table.get({name: "ext"}, i32.load({offset: ApplyChainOperation.OFFSET.PARAM1_THIS_EXTERN_TABLE_INDEX}, local.get(0))),
+                    table.get({name: "ext"}, i32.load({offset: ApplyChainOperation.OFFSET.PARAM2_ARGV_EXTERN_TABLE_INDEX}, local.get(0))),
                 )
-            )
+            ),
+
+            wat.if(
+                local.tee({name: "result_idx"}, 
+                    i32.load({offset: ApplyChainOperation.OFFSET.RESULT_GROW_EXTERN_TABLE_INDEX }, 
+                        local.get(0)
+                    )
+                ),
+                wat.then(
+                    table.set({name: "ext"}, 
+                        local.get({name: "result_idx"}), 
+                        local.get({name: "result_ext"}), 
+                    )
+                ),
+                wat.else(
+                    i32.store({offset: ApplyChainOperation.OFFSET.RESULT_GROW_EXTERN_TABLE_INDEX }, 
+                        local.get(0),
+                        table.grow({name: "ext"}, 
+                            local.get({name: "result_ext"}), 
+                            i32.const(1)
+                        )
+                    )
+                )
+            ),
         ),
         func({ name: "wasm_setii" },
             param(i32),
-            call({ name: "self_setii"},
-                table.get({name: "ext"}, i32.load({offset: 12}, local.get(0))),
-                i32.load({offset: 16}, local.get(0)),
-                i32.load({offset: 20}, local.get(0))
+            call({name: "self_setii"},
+                table.get({name: "ext"}, i32.load({offset: SetIntegerAtChainOperation.OFFSET.PARAM0_TARGET_EXTERN_INDEX}, local.get(0))),
+                i32.load({offset: SetIntegerAtChainOperation.OFFSET.PARAM1_KEY_UINT32_NUMBER}, local.get(0)),
+                i32.load({offset: SetIntegerAtChainOperation.OFFSET.PARAM2_VALUE_UINT32_NUMBER}, local.get(0))
             )
         ),
         func({ name: "wasm_setif" },
             param(i32),
             call({ name: "self_setif"},
-                table.get({name: "ext"}, i32.load({offset: 12}, local.get(0))),
-                i32.load({offset: 16}, local.get(0)),
-                table.get({name: "fun"}, i32.load({offset: 20}, local.get(0))),
+                table.get({name: "ext"}, i32.load({offset: SetFuncrefAtChainOperation.OFFSET.PARAM0_TARGET_EXTERN_INDEX}, local.get(0))),
+                i32.load({offset: SetFuncrefAtChainOperation.OFFSET.PARAM1_KEY_UINT32_NUMBER}, local.get(0)),
+                table.get({name: "fun"}, i32.load({offset: SetFuncrefAtChainOperation.OFFSET.PARAM2_VALUE_FUNCREF_INDEX}, local.get(0))),
             )
         ),
         func({ name: "wasm_setie" },
             param(i32),
             call({ name: "self_setie"},
-                table.get({name: "ext"}, i32.load({offset: 12}, local.get(0))),
-                i32.load({offset: 16}, local.get(0)),
-                table.get({name: "ext"}, i32.load({offset: 20}, local.get(0))),
+                table.get({name: "ext"}, i32.load({offset: SetExternrefAtChainOperation.OFFSET.PARAM0_TARGET_EXTERN_INDEX}, local.get(0))),
+                i32.load({offset: SetExternrefAtChainOperation.OFFSET.PARAM1_KEY_UINT32_NUMBER}, local.get(0)),
+                table.get({name: "ext"}, i32.load({offset: SetExternrefAtChainOperation.OFFSET.PARAM2_VALUE_EXTERN_INDEX}, local.get(0))),
             )
         ),
         func({ name: "wasm_setni" },
             param(i32),
 
+            local({name: "tindex"}, i32),
             local({name: "target"}, externref),
             local({name: "offset"}, i32),
             local({name: "length"}, i32),
             local({name: "stride"}, i32),
             local({name: "i"}, i32),
 
-            local.set({name: "target"}, table.get({name: "ext"}, i32.load({offset: 12}, local.get(0)))),
-            local.set({name: "offset"}, i32.load({offset: 16}, local.get(0))),
-            local.set({name: "length"}, i32.load({offset: 20}, local.get(0))),
-            local.set({name: "stride"}, i32.load({offset: 24}, local.get(0))),
+            local.set({name: "tindex"}, i32.load({offset: SetBytesFromChainOperation.OFFSET.PARAM0_TARGET_EXTERN_INDEX}, local.get(0))),
+            local.set({name: "offset"}, i32.load({offset: SetBytesFromChainOperation.OFFSET.PARAM1_OFFSET_UINT32_NUMBER}, local.get(0))),
+            local.set({name: "length"}, i32.load({offset: SetBytesFromChainOperation.OFFSET.PARAM2_LENGTH_UINT32_NUMBER}, local.get(0))),
+            local.set({name: "stride"}, i32.load({offset: SetBytesFromChainOperation.OFFSET.PARAM3_STRIDE_UINT32_NUMBER}, local.get(0))),
 
-            wat.if(local.get({name: "length"}),
-                wat.then(local.set({name: "i"}, local.get({name: "length"}))),
-                wat.else(wat.return())
+            wat.if(
+                i32.eqz(local.get({name: "length"})), 
+                wat.then(wat.return())
             ),
+
+            local.set({name: "i"}, local.get({name: "length"})),
+            local.set({name: "target"}, table.get({name: "ext"}, local.get({name: "tindex"}))),
 
             loop({name: "i--"},
                 local.set({name: "i"}, 
-                    i32.sub(
-                        local.get({name: "i"}),
-                        i32.const(-1) 
-                    )
+                    i32.sub(local.get({name: "i"}), i32.const(1))
                 ),
 
                 call({name: "self_setii"},
@@ -196,18 +427,11 @@ export default (buffer = Buffer.alloc(4)) =>
                         )
                     )
                 ),
-
+                
                 br_if({name: "i--"}, local.get({name: "i"}))
             )
         ),
-        func({ name: "copy_memii" },
-            param(i32),
-            memory.copy(
-                i32.load({offset: 12}, local.get(0)),
-                i32.load({offset: 16}, local.get(0)),
-                i32.load({offset: 20}, local.get(0)),
-            )
-        ),
+        
         func({ name: "process_op", export: "process" },
             param(i32),
             local({ name: "fun_index"}, i32),
@@ -215,10 +439,10 @@ export default (buffer = Buffer.alloc(4)) =>
 
             drop(i32.atomic.rmw.add(i32.const(0), i32.const(1))),
 
-            local.tee({ name: "fun_index" }, i32.atomic.rmw.and({ offset: OFFSET_OP_CALL_TBL_FUNC_AT }, local.get(0), i32.const(0))),
+            local.tee({ name: "fun_index" }, i32.atomic.rmw.and({ offset: ChainOperation.OFFSET.CALL_INDIRECT_INDEX }, local.get(0), i32.const(0))),
             wat.if(wat.then(call_indirect({ name: "fun" }, param(i32), local.get(0), local.get({ name: "fun_index" })))),
 
-            local.tee({ name: "op_length" }, i32.atomic.rmw.and({ offset: OFFSET_OP_SIZE_BYTE_LENGTH }, local.get(0), i32.const(0))),
+            local.tee({ name: "op_length" }, i32.atomic.rmw.and({ offset: ChainOperation.OFFSET.BYTES_PER_OPERATION }, local.get(0), i32.const(0))),
             wat.if(wat.then(call({ name: "process_op" }, i32.add(local.get(0), local.get({ name: "op_length" })))))
         ),
 
@@ -257,18 +481,16 @@ export default (buffer = Buffer.alloc(4)) =>
 
             tbl_fun = [
                 ref.null(func), 
-                
-                ref.func({name: "wasm_array" /*  1 */ }), 
-                ref.func({name: "wasm_apply" /*  2 */ }), 
-                ref.func({name: "wasm_setie" /*  3 */ }), 
-                ref.func({name: "wasm_setif" /*  4 */ }), 
+                ref.func({name: "grow_table" /*  1 */ }), 
+                ref.func({name: "copy_memii" /*  2 */ }), 
+                ref.func({name: "wasm_array" /*  3 */ }), 
+                ref.func({name: "wasm_apply" /*  4 */ }), 
                 ref.func({name: "wasm_setii" /*  5 */ }), 
-                ref.func({name: "wasm_setni" /*  6 */ }), 
-
-                ref.func({name: "process_op" /*  7 */ }), 
-                ref.func({name: "then_bound" /*  8 */ }), 
-                ref.func({name: "copy_memii" /*  9 */ }), 
-                ref.func({name: "grow_table" /* 10 */ }), 
+                ref.func({name: "wasm_setif" /*  6 */ }), 
+                ref.func({name: "wasm_setie" /*  7 */ }), 
+                ref.func({name: "wasm_setni" /*  8 */ }), 
+                ref.func({name: "process_op" /*  9 */ }), 
+                ref.func({name: "then_bound" /* 10 */ }), 
             ]
         ),
 
@@ -281,5 +503,5 @@ export default (buffer = Buffer.alloc(4)) =>
 
         data(i32.const(16), `"${buffer.toString("hex").replaceAll(/(..)/g, '\\\$1')}"`),
 
-        start({ name: "start" }),
+        //start({ name: "start" }),
     );

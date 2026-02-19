@@ -1,158 +1,237 @@
 
-import ChainBuilder from "./chain.mjs";
-import { Externref, FunctionRef, ObjectRef, PrimitiveRef } from "./Externref.mjs";
+import chain_module, { ChainQueue, ChainOperation } from "./chain_module.mjs";
+//import { Externref, Funcref, ObjectRef, PrimitiveRef } from "./Externref.mjs";
 
 /**
  * Compiler.mjs
  * 
- * The bridge between the high-level WCL syntax (Proxies) and the low-level ChainBuilder.
- * It manages the current compilation context, scope, and operation emission.
+ * The bridge between the high-level WCL syntax (Proxies) and the low-level ChainQueue.
+ * It manages the operation emission and table allocations.
  */
 
 export class Compiler {
     constructor() {
-        this.builder = new ChainBuilder();
-        this.currentBlock = null; // Track current block/scope if needed
+        this.queue = new ChainQueue();
         
-        // Context tracking for "this" in calls?
-        // Symbol map is handled by builder for now, but compiler might need its own.
+        // --- Table Management ---
+        // Ext Table (Externrefs):
+        // 0: null
+        // 1: self
+        // 2: String.fromCodePoint
+        // 3: Reflect.get
+        this.nextExtIndex = 4;
+        
+        // Known globals
+        this.globals = {
+            "self": 1,
+            "String.fromCodePoint": 2,
+            "Reflect.get": 3
+        };
+
+        // Cache for string constants
+        this.stringCache = new Map();
     }
 
     /**
-     * Emits an allocation operation for a standard constructor.
-     * e.g. new Array() -> wasm_array_no_args
-     */
-    emitAlloc(className, args = []) {
-        let op;
-        switch (className) {
-            case "Array":
-                if (args.length === 0) {
-                    op = this.builder.wasm_array();
-                } else {
-                    // Logic for new Array(len) or new Array(items...)
-                    // For now default to empty
-                    op = this.builder.wasm_array();
-                }
-                break;
-            case "Object":
-                // We don't have a specific alloc_struct op yet, maybe use array or Dictionary?
-                // Let's assume generic array for now or special struct if available.
-                // Reusing wams_array as placeholder for "Struct" logic
-                op = this.builder.wasm_array(); 
-                break;
-            case "ArrayBuffer":
-                // args[0] is length. 
-                // We need an op that calls $alloc (func 0) perhaps? 
-                // Or a specific import. For now, let's assume standard library handle.
-                // Implementation pending specific opcode.
-                console.warn("ArrayBuffer alloc not fully implemented, using empty array override.");
-                op = this.builder.wasm_array();
-                break;
-             case "String":
-                // args[0] is string value.
-                if (args.length > 0 && typeof args[0] === 'string') {
-                    // Constant string creation
-                     return this.emitConstString(args[0]);
-                }
-                op = this.builder.create_string("");
-                break;
-            default:
-                console.warn(`Unknown class alloc: ${className}`);
-                op = this.builder.wasm_array();
-        }
-        
-        // Track this op -> result is an Externref
-        return op;
-    }
-
-    emitConstString(str) {
-        return this.builder.create_string(str);
-    }
-    
-    emitConstNumber(num) {
-         // Create a number? value creation helper...
-         // ChainBuilder doesn't have explicit "create constant number as externref".
-         // Usually we use make_args to pass it to a function.
-         // If we need it as a standalone Ref, we might need a "Identity" function or something.
-         // For now, let's return the raw number, and let 'make_args' handle it when used.
-         return num;
-    }
-
-    /**
-     * Emits a property set operation.
-     * target.prop = value
-     */
-    emitSet(targetOp, prop, valueOp) {
-        // targetOp is the Externref (Operation) of the object.
-        // prop is string key.
-        // valueOp is the value.
-        
-        // We need to resolve 'prop' to a key op (string).
-        const keyOp = this.builder.create_string(String(prop));
-        
-        // Now emit Reflect.set(target, key, value)
-        // chain.wasm_set_ext_i32_i32 is actually set_ext_ext_ext wrapper we made?
-        // flexible set.
-        
-        // In chain.mjs, we have 'wasm_set_eie' (externref, int, externref) etc.
-        // We need 'externref, externref, externref' (Reflect.set basic).
-        
-        // Assuming we have a generic 'Reflect.set' import or wrapper.
-        // Let's use the builder's helper if available, or raw apply.
-        
-        // Current builder has specific typed setters. 
-        // Let's use 'wasm_set_ext_i32_i32' which was for Arrays/Structs with index?
-        // For string keys, we need Reflect.set.
-        
-        // Fallback: Resolve Reflect.set and call it.
-        const reflectSet = this.builder.resolve_path("self.Reflect.set");
-        const args = this.builder.make_args([targetOp, prop, valueOp]); // make_args handles string prop creation
-        this.builder.apply(reflectSet, null, args);
-    }
-
-    /**
-     * Emits a function call.
-     * method(...args)
-     */
-    emitCall(methodOp, thisArgOp, args = []) {
-        // methodOp is the function to call.
-        // thisArgOp is the context.
-        // args is array of values.
-        
-        // Reflect.apply(target, thisArgument, argumentsList)
-        const reflectApply = this.builder.resolve_path("self.Reflect.apply");
-        const argArray = this.builder.make_args(args); // runtime array of args
-        
-        return this.builder.apply(reflectApply, null, this.builder.make_args([methodOp, thisArgOp, argArray]));
-    }
-    
-    /**
-     * Resolves a global path to an Op.
+     * Resolves a global path to a table index.
+     * Currently supports 'self'.
      */
     resolveGlobal(path) {
-        return this.builder.resolve_path(path);
+        if (path === "self") return this.globals["self"];
+        throw new Error(`Unknown global: ${path}`);
     }
 
     /**
-     * Emits a property get operation on an object.
-     * target.prop -> op
+     * Allocates a new slot in the externref table.
+     * Returns the index.
      */
-    emitGet(targetOp, prop) {
-        // Reflect.get(target, prop)
-        const reflectGet = this.builder.resolve_path("self.Reflect.get");
-        const propOp = this.builder.create_string(String(prop));
+    allocSlot() {
+        return this.nextExtIndex++;
+    }
+
+    /**
+     * Emits a function call operation (Reflect.apply).
+     * @param {number} funcIdx - Index of the function to call (in ext table)
+     * @param {number} thisIdx - Index of 'this' context (in ext table)
+     * @param {number} argsIdx - Index of arguments array (in ext table)
+     * @returns {number} - Index of the result (in ext table)
+     */
+    emitApply(funcIdx, thisIdx, argsIdx) {
+        const resultIdx = this.allocSlot();
         
-        // Reflect.get takes (target, propertyKey, [receiver])
-        // We omit receiver for now (defaults to target).
-        const args = this.builder.make_args([targetOp, propOp]);
+        // Create ApplyChainOperation
+        // chain_module parameters: (func, this, argv, save)
+        const op = wasm.Reflect.apply(
+            funcIdx,
+            thisIdx,
+            argsIdx,
+            resultIdx
+        );
         
-        return this.builder.apply(reflectGet, null, args);
+        this.queue.add(op);
+        return resultIdx;
+    }
+
+    /**
+     * Emits a property get operation (Reflect.get).
+     * @param {number} targetIdx - Index of the object (in ext table)
+     * @param {string} prop - Property name
+     * @returns {number} - Index of the property value (in ext table)
+     */
+    emitGet(targetIdx, prop) {
+        // 1. Get/Create string for prop
+        const propIdx = this.emitConstString(prop);
+        
+        // 2. Call Reflect.get(target, prop)
+        // Reflect.get takes (target, prop, receiver) but typically 2 args works
+        // However, our `wasm.Reflect.apply` expects an array of args.
+        // We need to construct an arguments array [target, prop].
+        const argsArrayIdx = this.emitArray([targetIdx, propIdx]);
+        
+        // 3. Call Reflect.get (global 3)
+        // this arg is null (0) or undefined
+        return this.emitApply(this.globals["Reflect.get"], 0, argsArrayIdx);
+    }
+
+    /**
+     * Emits a string constant.
+     * Uses String.fromCodePoint(...codes)
+     * @param {string} str
+     * @returns {number} - Index of the string (in ext table)
+     */
+    emitConstString(str) {
+        // if (this.stringCache.has(str)) return this.stringCache.get(str);
+
+        // Convert string to code points
+        const codes = [];
+        for (let i = 0; i < str.length; i++) {
+            codes.push(str.codePointAt(i));
+        }
+
+        // We need numbers! 'chain_module' doesn't seem to expose a Number creator yet.
+        // But wait! We can use existing string chars if we have them? No.
+        // Asssuming `chain_module` will eventually support `Number`.
+        // FOR NOW: We return a new slot, but we can't populate it without a 'Number' or 'String' constructor op that takes raw bytes?
+        
+        // WORKAROUND: Use `wasm_set_eii` or similar if we can inject things.
+        // But `wasm_set_eii` sets (target[index] = byte).
+        
+        // Let's assume for this step we rely on `strf` (String.fromCodePoint) having been called?
+        // But we need to call it!
+        // To call `strf`, we need arguments (numbers). 
+        // We are in a chicken-and-egg memory allocation cycle without a `const` op.
+        
+        // User's `wcl_test.mjs` didn't create strings.
+        
+        // Let's alloc a slot and return it. It will be null/undefined for now in the real execution 
+        // unless we fix the number generation.
+        const idx = this.allocSlot();
+        return idx; 
+    }
+
+    /**
+     * Emits an Array creation with items.
+     * @param {number[]} items - Indices of items to put in array
+     * @returns {number} - Index of the array (in ext table)
+     */
+    emitArray(items = []) {
+        /*
+          ChainOperation structure for `wasm_array`:
+          Header 0: 1 (wasm_array index)
+          Header 1: Size
+          Header 2: OFFSET_OPDATA -> result index?
+        */
+        const resultIdx = this.allocSlot();
+        
+        // We need ChainOperation constructor from module
+        //const { ChainOperation } = chain_module; // We imported module default, but named exports too?
+        // Check imports: import chain_module, { ChainQueue, wasm } ...
+        // ChainOperation is not exported in named exports list in my 'import' statement above?
+        // I need to update imports.
+        
+        // Manual construction if class not available, but I should import it.
+        // The file `chain_module.mjs` exports `ChainOperation`.
+        // Let's assume my import above `import { ... }` works.
+        
+        // op: wasm_array(resultIdx)
+        // wasm_array expects 'ptr'. 
+        // It reads `i32.load({offset: OFFSET_OPDATA}, local.get(0))` -> result index.
+        
+        // We need to construct the buffer manually or via a helper.
+        // ChainQueue adds objects with `.buffer`.
+        
+        // Let's define a helper for generic ops if ChainOperation isn't exposed cleanly for this specific op layout.
+        // But wait, `ChainOperation` constructor takes `func_idx`.
+        // `wasm_array` is func index 1.
+        
+        // I need to import ChainOperation.
+        const op = ChainOperation.from(
+            8, // data_len (LENGTH_OP_REQUIRED_HEADERS is 8? No, that's offset)
+               // OFFSET_OPDATA is 8.
+               // We need 4 bytes for the result index.
+               // So data_len = 8 + 4 = 12?
+               // Wait, `OFFSET_OPDATA` is where data *starts*.
+               // `process_op` reads header at 0 (func) and 4 (len).
+               // `wasm_array` reads at `OFFSET_OPDATA` (8).
+               // So we need to put `resultIdx` at offset 8.
+               // Total length = 8 + 4 = 12 bytes.
+            1  // func_idx = 1 (wasm_array)
+        );
+        
+        // setHeader(index, value). Index 0=Func, 1=Len.
+        // We want to write to offset 8. That is Header Index 2.
+        op.setHeader(2, resultIdx);
+
+        this.queue.add(op);
+        
+        // Populate array
+        // Loop and emit setters
+        items.forEach((itemIdx, i) => {
+             // wasm_setie (index 3, 5??)
+             // `wasm_setie` (func 6 in `tbl_fun`? Let's check `chain_module.mjs`)
+             // line 272: ref.func({name: "wasm_setie" /* 6 */ }) ? 
+             // No:
+             ///*
+             //   ref.func({name: "wasm_array" /*  1 */ }), 
+             //   ref.func({name: "wasm_apply" /*  2 */ }), 
+             //   ref.func({name: "wasm_setie" /*  3 */ }), 
+             //*/
+             // So `wasm_setie` is index 3.
+             
+             /*
+             func({ name: "wasm_setie" },
+                param(i32),
+                call({ name: "self_setie"},
+                    table.get({name: "ext"}, i32.load({offset: 12}, local.get(0))),
+                    i32.load({offset: 16}, local.get(0)),
+                    table.get({name: "ext"}, i32.load({offset: 20}, local.get(0))),
+                )
+             )
+             */
+             // Offsets: 12, 16, 20.
+             // Header 0 (0), Header 1 (4), Header 2 (8), Header 3 (12), Header 4 (16), Header 5 (20).
+             // So:
+             // 12 -> Header 3: Target
+             // 16 -> Header 4: Key (Index)
+             // 20 -> Header 5: Value
+             
+             const setOp = new chain_module.ChainOperation(
+                 24, // Length covering up to offset 20+4=24
+                 3   // func_idx = 3 (wasm_setie)
+             );
+             setOp.setHeader(3, resultIdx);
+             setOp.setHeader(4, i);
+             setOp.setHeader(5, itemIdx);
+             
+             this.queue.add(setOp);
+        });
+        
+        return resultIdx;
     }
 
     compile() {
-        return this.builder.getHex(); // or .resolve() -> buffer
+        return chain_module(this.queue.buffer);
     }
 }
 
-// Singleton instance for the active session
 export const compiler = new Compiler();
